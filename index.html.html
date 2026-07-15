@@ -59,6 +59,45 @@ body{
 }
 .filter-btn:hover,.clear-btn:hover{transform:translateY(-2px);box-shadow:0 9px 18px rgba(0,64,119,.16)}
 .filter-btn.active,.clear-btn{background:var(--azul-principal);color:#fff}
+
+.multi-select{position:relative;min-width:180px}
+.multi-select-trigger{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  border:1px solid var(--borda);border-radius:999px;padding:10px 15px;
+  background:#fff;color:var(--azul-escuro);font-weight:850;cursor:pointer
+}
+.multi-select-menu{
+  display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:1000;
+  min-width:230px;max-height:300px;overflow:auto;padding:10px;
+  background:#fff;border:1px solid var(--borda);border-radius:16px;
+  box-shadow:0 18px 40px rgba(0,64,119,.22)
+}
+.multi-select.open .multi-select-menu{display:block}
+.multi-select-actions{
+  display:flex;gap:8px;padding:4px 4px 10px;border-bottom:1px solid var(--borda);margin-bottom:8px
+}
+.multi-select-actions button{
+  flex:1;border:0;border-radius:999px;padding:7px 9px;
+  background:#e0f2fe;color:var(--azul-escuro);font-size:11px;font-weight:850;cursor:pointer
+}
+.multi-option{
+  display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:10px;
+  color:#334155;font-size:13px;font-weight:750;cursor:pointer
+}
+.multi-option:hover{background:#eef6fc}
+.multi-option input{width:16px;height:16px;accent-color:var(--azul-principal)}
+body.dark-mode .multi-select-trigger,
+body.dark-mode .multi-select-menu{background:#10263c;color:#eaf4ff;border-color:#1f3852}
+body.dark-mode .multi-option{color:#dbeafe}
+body.dark-mode .multi-option:hover{background:#17324d}
+.selected-filter-summary{
+  width:100%;margin-top:8px;color:var(--muted);font-size:12px;font-weight:750
+}
+@media(max-width:720px){
+  .date-filter-group{width:100%}
+  .multi-select{width:100%}
+}
+
 select{border:1px solid var(--borda);background:#fff;min-width:190px}
 .info{
   border-left:6px solid var(--azul-claro);border-radius:14px;padding:16px 18px;
@@ -132,6 +171,37 @@ body.dark-mode .info,body.dark-mode .insight-card p{color:#dbeafe}
 .pulse{animation:pulse 1.8s infinite}@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(52,144,206,.22)}50%{box-shadow:0 0 0 8px rgba(52,144,206,0)}}
 @media(max-width:1100px){.cards{grid-template-columns:repeat(3,1fr)}.grid-2,.grid-2.equal{grid-template-columns:1fr}.header{grid-template-columns:1fr;text-align:center}.logo{margin:auto}.update{text-align:center;margin-top:12px}}
 @media(max-width:720px){.cards,.insight-grid{grid-template-columns:1fr}.container{max-width:calc(100% - 24px)}.topbar{padding:12px 16px 0}.title h1{font-size:25px}.menu{overflow-x:auto;justify-content:flex-start}.theme-toggle{top:auto;bottom:20px}.kpi-comparison{grid-template-columns:1fr}}
+
+/* ===== CORREÇÃO DE CAMADAS DOS FILTROS ===== */
+.pbi-toolbar{
+  position:relative;
+  z-index:3000;
+  overflow:visible !important;
+}
+.filter-group,
+.date-filter-group{
+  position:relative;
+  z-index:3100;
+  overflow:visible !important;
+}
+.multi-select{
+  position:relative;
+  z-index:3200;
+}
+.multi-select.open{
+  z-index:9999;
+}
+.multi-select-menu{
+  z-index:10000 !important;
+}
+.cards,
+.panel,
+.grid-2,
+section{
+  position:relative;
+  z-index:1;
+}
+
 </style>
 </head>
 <body>
@@ -156,7 +226,7 @@ body.dark-mode .info,body.dark-mode .insight-card p{color:#dbeafe}
 <main class="container">
   <div class="page-title">
     <h2>Visão Geral dos Bloqueios</h2>
-    <p>Selecione o motivo e o período para atualizar automaticamente todos os indicadores e gráficos.</p>
+    <p>Selecione um ou mais anos e meses para atualizar automaticamente todos os indicadores e gráficos.</p>
   </div>
 
   <div class="info">
@@ -170,14 +240,23 @@ body.dark-mode .info,body.dark-mode .insight-card p{color:#dbeafe}
       <button class="filter-btn" data-motivo="E">Motivo E</button>
       <button class="filter-btn" data-motivo="F">Motivo F</button>
     </div>
-    <div class="filter-group">
-      <span class="filter-label">Período</span>
-      <select id="periodo">
-        <option value="all">Jan/2025 a Jul/2026</option>
-        <option value="2026">Somente 2026</option>
-        <option value="12">Últimos 12 meses</option>
-        <option value="6">Últimos 6 meses</option>
-      </select>
+    <div class="filter-group date-filter-group">
+      <span class="filter-label">Ano</span>
+      <div class="multi-select" id="anoMulti">
+        <button type="button" class="multi-select-trigger" onclick="toggleMultiSelect('anoMulti')">
+          <span id="anoResumo">Todos os anos</span><b>▾</b>
+        </button>
+        <div class="multi-select-menu" id="anoMenu"></div>
+      </div>
+
+      <span class="filter-label">Mês</span>
+      <div class="multi-select" id="mesMulti">
+        <button type="button" class="multi-select-trigger" onclick="toggleMultiSelect('mesMulti')">
+          <span id="mesResumo">Todos os meses</span><b>▾</b>
+        </button>
+        <div class="multi-select-menu" id="mesMenu"></div>
+      </div>
+
       <button class="clear-btn" id="limparFiltros">Limpar filtros</button>
     </div>
   </div>
@@ -193,7 +272,7 @@ body.dark-mode .info,body.dark-mode .insight-card p{color:#dbeafe}
 
   <section id="evolucao" class="grid-2">
     <div class="panel">
-      <div class="panel-title"><span>Evolução mensal — SP × JU</span><small>Clique na legenda para ocultar uma série</small></div>
+      <div class="panel-title"><span>Evolução mensal — SP × JU</span><small>Datas exibidas trimestralmente; passe o mouse para ver cada mês</small></div>
       <div class="panel-body"><div id="chartEvolucao" class="apex-chart-host"></div></div>
     </div>
     <div class="panel">
@@ -211,14 +290,14 @@ body.dark-mode .info,body.dark-mode .insight-card p{color:#dbeafe}
   
 <section id="ranking" class="grid-2 equal">
   <div class="panel">
-    <div class="panel-title"><span>Altas e quedas mensais — SP</span><small>Variação percentual mês contra mês</small></div>
+    <div class="panel-title"><span>Altas e quedas mensais — SP</span><small>Rótulos trimestrais; todos os meses permanecem no gráfico</small></div>
     <div class="panel-body">
       <div id="chartVariacaoSP" class="apex-chart-host"></div>
       <div class="executive-reading" id="leituraSP"></div>
     </div>
   </div>
   <div class="panel">
-    <div class="panel-title"><span>Altas e quedas mensais — JU</span><small>Variação percentual mês contra mês</small></div>
+    <div class="panel-title"><span>Altas e quedas mensais — JU</span><small>Rótulos trimestrais; todos os meses permanecem no gráfico</small></div>
     <div class="panel-body">
       <div id="chartVariacaoJU" class="apex-chart-host"></div>
       <div class="executive-reading" id="leituraJU"></div>
@@ -253,13 +332,110 @@ const pct=(a,b)=>b?((a-b)/b*100):null;
 const pctTxt=v=>v===null?"—":`${v>=0?"+":""}${v.toFixed(1).replace(".",",")}%`;
 const mesTxt=s=>{const [a,m]=s.split("-");return `${m}/${a}`};
 
-function recorte(arr){
-  const p=document.getElementById("periodo").value;
-  if(p==="2026"){const i=D.months.findIndex(x=>x.startsWith("2026"));return [D.months.slice(i),arr.slice(i)]}
-  if(p==="12")return [D.months.slice(-12),arr.slice(-12)];
-  if(p==="6")return [D.months.slice(-6),arr.slice(-6)];
-  return [D.months,arr];
+
+const NOMES_MESES={
+  "01":"Janeiro","02":"Fevereiro","03":"Março","04":"Abril",
+  "05":"Maio","06":"Junho","07":"Julho","08":"Agosto",
+  "09":"Setembro","10":"Outubro","11":"Novembro","12":"Dezembro"
+};
+let anosSelecionados=new Set();
+let mesesSelecionados=new Set();
+
+function indicesSelecionados(){
+  const indices=[];
+  D.months.forEach((periodo,i)=>{
+    const [ano,mes]=periodo.split("-");
+    const anoOk=anosSelecionados.size===0 || anosSelecionados.has(ano);
+    const mesOk=mesesSelecionados.size===0 || mesesSelecionados.has(mes);
+    if(anoOk && mesOk) indices.push(i);
+  });
+  return indices;
 }
+function recorte(arr){
+  const indices=indicesSelecionados();
+  return [
+    indices.map(i=>D.months[i]),
+    indices.map(i=>arr[i]||0)
+  ];
+}
+function toggleMultiSelect(id){
+  const alvo=document.getElementById(id);
+  document.querySelectorAll(".multi-select").forEach(el=>{
+    if(el!==alvo) el.classList.remove("open");
+  });
+  alvo.classList.toggle("open");
+}
+function selecionarTodos(tipo){
+  const menu=tipo==="ano"?document.getElementById("anoMenu"):document.getElementById("mesMenu");
+  menu.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=true);
+  atualizarSelecaoMultipla(tipo);
+}
+function limparSelecao(tipo){
+  const menu=tipo==="ano"?document.getElementById("anoMenu"):document.getElementById("mesMenu");
+  menu.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  atualizarSelecaoMultipla(tipo);
+}
+function atualizarSelecaoMultipla(tipo){
+  if(tipo==="ano"){
+    anosSelecionados=new Set(
+      [...document.querySelectorAll('#anoMenu input[type="checkbox"]:checked')].map(x=>x.value)
+    );
+  }else{
+    mesesSelecionados=new Set(
+      [...document.querySelectorAll('#mesMenu input[type="checkbox"]:checked')].map(x=>x.value)
+    );
+  }
+  atualizarResumoFiltros();
+  render();
+}
+function atualizarResumoFiltros(){
+  const anos=[...anosSelecionados].sort();
+  const meses=[...mesesSelecionados].sort();
+
+  document.getElementById("anoResumo").textContent=
+    anos.length===0?"Todos os anos":
+    anos.length<=2?anos.join(", "):`${anos.length} anos selecionados`;
+
+  document.getElementById("mesResumo").textContent=
+    meses.length===0?"Todos os meses":
+    meses.length<=2?meses.map(m=>NOMES_MESES[m]).join(", "):`${meses.length} meses selecionados`;
+}
+function montarFiltrosData(){
+  const anos=[...new Set(D.months.map(x=>x.split("-")[0]))].sort();
+  const meses=[...new Set(D.months.map(x=>x.split("-")[1]))].sort();
+
+  document.getElementById("anoMenu").innerHTML=`
+    <div class="multi-select-actions">
+      <button type="button" onclick="selecionarTodos('ano')">Selecionar todos</button>
+      <button type="button" onclick="limparSelecao('ano')">Limpar</button>
+    </div>
+    ${anos.map(ano=>`
+      <label class="multi-option">
+        <input type="checkbox" value="${ano}" onchange="atualizarSelecaoMultipla('ano')">
+        <span>${ano}</span>
+      </label>`).join("")}
+  `;
+
+  document.getElementById("mesMenu").innerHTML=`
+    <div class="multi-select-actions">
+      <button type="button" onclick="selecionarTodos('mes')">Selecionar todos</button>
+      <button type="button" onclick="limparSelecao('mes')">Limpar</button>
+    </div>
+    ${meses.map(mes=>`
+      <label class="multi-option">
+        <input type="checkbox" value="${mes}" onchange="atualizarSelecaoMultipla('mes')">
+        <span>${NOMES_MESES[mes]}</span>
+      </label>`).join("")}
+  `;
+  atualizarResumoFiltros();
+}
+
+document.addEventListener("click",event=>{
+  if(!event.target.closest(".multi-select")){
+    document.querySelectorAll(".multi-select").forEach(el=>el.classList.remove("open"));
+  }
+});
+
 function serie(uf){
   const base=(D.series[motivo]&&D.series[motivo][uf])||D.months.map(()=>0);
   return recorte(base);
@@ -284,6 +460,12 @@ function tendencia(v){
 function destruir(){
   Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});
   charts={};
+}
+
+
+function labelTrimestral(value, timestamp, opts){
+  const indice = opts && typeof opts.i === "number" ? opts.i : 0;
+  return indice % 3 === 0 ? value : "";
 }
 
 function variacoes(arr){
@@ -328,45 +510,84 @@ function render(){
   charts.evolucao=new ApexCharts(document.querySelector("#chartEvolucao"),{
     chart:{type:"area",height:335,toolbar:{show:false},animations:{enabled:true,easing:"easeinout",speed:700}},
     series:[{name:"SP",data:spSerie},{name:"JU",data:juSerie}],
-    xaxis:{categories:meses.map(mesTxt),labels:{style:{colors:fore}}},
+    xaxis:{
+      categories:meses.map(mesTxt),
+      tickPlacement:"on",
+      labels:{
+        rotate:0,
+        rotateAlways:false,
+        hideOverlappingLabels:true,
+        trim:false,
+        minHeight:34,
+        maxHeight:48,
+        formatter:labelTrimestral,
+        style:{colors:fore,fontSize:"11px"}
+      }
+    },
     yaxis:{labels:{formatter:fmt,style:{colors:fore}}},
     stroke:{curve:"smooth",width:3},fill:{type:"gradient",gradient:{shadeIntensity:1,opacityFrom:.35,opacityTo:.05}},
     dataLabels:{enabled:false},markers:{size:3},grid:{borderColor:grid},
     legend:{position:"top",horizontalAlign:"right",labels:{colors:fore}},
-    tooltip:{y:{formatter:fmt}}
+    tooltip:{x:{formatter:value=>value},y:{formatter:fmt}}
   });charts.evolucao.render();
 
   charts.participacao=new ApexCharts(document.querySelector("#chartParticipacao"),{
     chart:{type:"donut",height:335},series:[sp,ju,demais],labels:["SP","JU","Demais UFs"],
     legend:{position:"bottom",labels:{colors:fore}},dataLabels:{formatter:v=>v.toFixed(1)+"%"},
     plotOptions:{pie:{donut:{size:"68%",labels:{show:true,total:{show:true,label:"Total filtrado",formatter:()=>fmt(total)},value:{formatter:v=>fmt(Number(v))}}}}},
-    tooltip:{y:{formatter:fmt}}
+    tooltip:{x:{formatter:value=>value},y:{formatter:fmt}}
   });charts.participacao.render();
 
   charts.variacaoSP=new ApexCharts(document.querySelector("#chartVariacaoSP"),{
     chart:{type:"bar",height:335,toolbar:{show:false}},
     series:[{name:"Variação SP",data:variacaoSP.map(v=>v===null?0:Number(v.toFixed(2)))}],
-    xaxis:{categories:meses.map(mesTxt),labels:{rotate:-45,style:{colors:fore}}},
+    xaxis:{
+      categories:meses.map(mesTxt),
+      tickPlacement:"on",
+      labels:{
+        rotate:0,
+        rotateAlways:false,
+        hideOverlappingLabels:true,
+        trim:false,
+        minHeight:34,
+        maxHeight:48,
+        formatter:labelTrimestral,
+        style:{colors:fore,fontSize:"11px"}
+      }
+    },
     yaxis:{labels:{formatter:v=>`${v.toFixed(0)}%`,style:{colors:fore}}},
     plotOptions:{bar:{borderRadius:4,columnWidth:"70%",colors:{ranges:[
       {from:-999999,to:-0.0001,color:"#c73d4d"},
       {from:0,to:999999,color:"#16865a"}
     ]}}},
     dataLabels:{enabled:false},grid:{borderColor:grid},
-    tooltip:{y:{formatter:v=>`${v>=0?"+":""}${v.toFixed(1).replace(".",",")}%`}}
+    tooltip:{x:{formatter:value=>value},y:{formatter:v=>`${v>=0?"+":""}${v.toFixed(1).replace(".",",")}%`}}
   });charts.variacaoSP.render();
 
   charts.variacaoJU=new ApexCharts(document.querySelector("#chartVariacaoJU"),{
     chart:{type:"bar",height:335,toolbar:{show:false}},
     series:[{name:"Variação JU",data:variacaoJU.map(v=>v===null?0:Number(v.toFixed(2)))}],
-    xaxis:{categories:meses.map(mesTxt),labels:{rotate:-45,style:{colors:fore}}},
+    xaxis:{
+      categories:meses.map(mesTxt),
+      tickPlacement:"on",
+      labels:{
+        rotate:0,
+        rotateAlways:false,
+        hideOverlappingLabels:true,
+        trim:false,
+        minHeight:34,
+        maxHeight:48,
+        formatter:labelTrimestral,
+        style:{colors:fore,fontSize:"11px"}
+      }
+    },
     yaxis:{labels:{formatter:v=>`${v.toFixed(0)}%`,style:{colors:fore}}},
     plotOptions:{bar:{borderRadius:4,columnWidth:"70%",colors:{ranges:[
       {from:-999999,to:-0.0001,color:"#c73d4d"},
       {from:0,to:999999,color:"#16865a"}
     ]}}},
     dataLabels:{enabled:false},grid:{borderColor:grid},
-    tooltip:{y:{formatter:v=>`${v>=0?"+":""}${v.toFixed(1).replace(".",",")}%`}}
+    tooltip:{x:{formatter:value=>value},y:{formatter:v=>`${v>=0?"+":""}${v.toFixed(1).replace(".",",")}%`}}
   });charts.variacaoJU.render();
 
   leituraSP.innerHTML=resumoVariacao("SP",meses,spSerie,variacaoSP);
@@ -389,10 +610,13 @@ document.querySelectorAll(".filter-btn").forEach(btn=>btn.addEventListener("clic
   document.querySelectorAll(".filter-btn").forEach(x=>x.classList.remove("active"));
   btn.classList.add("active");motivo=btn.dataset.motivo;render();
 }));
-periodo.addEventListener("change",render);
 limparFiltros.addEventListener("click",()=>{
-  motivo="2";periodo.value="all";
+  motivo="2";
+  anosSelecionados.clear();
+  mesesSelecionados.clear();
+  document.querySelectorAll('#anoMenu input[type="checkbox"], #mesMenu input[type="checkbox"]').forEach(x=>x.checked=false);
   document.querySelectorAll(".filter-btn").forEach(x=>x.classList.toggle("active",x.dataset.motivo==="2"));
+  atualizarResumoFiltros();
   render();
 });
 themeToggle.addEventListener("click",()=>{
@@ -400,6 +624,7 @@ themeToggle.addEventListener("click",()=>{
   themeToggle.textContent=document.body.classList.contains("dark-mode")?"☀️":"🌙";
   render();
 });
+montarFiltrosData();
 render();
 </script>
 </body>
