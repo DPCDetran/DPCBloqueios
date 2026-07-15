@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel Comparativo de Bloqueios</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<style>
+:root{
+  --azul-principal:#005CA8;--azul-claro:#3490CE;--azul-escuro:#004077;
+  --fundo:#f3f7fb;--branco:#fff;--texto:#10243f;--muted:#64748b;
+  --borda:#d7e6f2;--verde:#16865a;--vermelho:#c73d4d;--laranja:#d97706;
+  --shadow-soft:0 10px 25px rgba(0,64,119,.10);
+  --shadow-strong:0 20px 42px rgba(0,64,119,.22);
+  --glass-bg:rgba(255,255,255,.86);
+}
+*{box-sizing:border-box;font-family:"Segoe UI",Arial,sans-serif}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--texto);
+  background:
+    radial-gradient(circle at top left,rgba(52,144,206,.13),transparent 34%),
+    radial-gradient(circle at top right,rgba(0,92,168,.10),transparent 28%),
+    var(--fundo);
+}
+.topbar{
+  position:relative;overflow:hidden;color:#fff;padding:12px 34px 0;
+  background:linear-gradient(135deg,var(--azul-escuro),var(--azul-principal));
+  box-shadow:0 14px 34px rgba(0,64,119,.22)
+}
+.topbar:before{content:"";position:absolute;right:-70px;top:-100px;width:280px;height:280px;border-radius:50%;background:rgba(255,255,255,.12)}
+.topbar:after{content:"";position:absolute;left:-90px;bottom:-140px;width:300px;height:300px;border-radius:50%;background:rgba(52,144,206,.18)}
+.header{position:relative;z-index:1;display:grid;grid-template-columns:220px 1fr 220px;align-items:center;min-height:126px}
+.logo{width:120px;display:block;filter:drop-shadow(0 8px 14px rgba(0,0,0,.22))}
+.title{text-align:center}
+.title h1{margin:0;font-size:31px;font-weight:850;letter-spacing:-.7px;text-shadow:0 3px 12px rgba(0,0,0,.18)}
+.title p{margin:8px 0 0;color:#dbeafe;font-size:15px}
+.update{text-align:right;font-size:13px;font-weight:750;color:#e0f2fe}
+.menu{position:relative;z-index:1;margin-top:14px;display:flex;justify-content:center;gap:10px}
+.menu button{border:0;background:transparent;color:#fff;padding:17px 26px;font-weight:850;cursor:pointer;border-radius:10px 10px 0 0}
+.menu button.active{background:rgba(255,255,255,.18);border-bottom:4px solid var(--azul-claro)}
+.container{width:1380px;max-width:calc(100% - 46px);margin:auto;padding:28px 0 44px}
+.page-title{margin-bottom:18px}
+.page-title h2{margin:0;color:var(--azul-escuro);font-size:28px}
+.page-title p{margin:7px 0 0;color:var(--muted)}
+.pbi-toolbar,.panel,.card,.info{
+  background:var(--glass-bg);backdrop-filter:blur(12px);
+  border:1px solid var(--borda);box-shadow:var(--shadow-soft)
+}
+.pbi-toolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  border-radius:16px;padding:15px 17px;margin-bottom:18px
+}
+.filter-group{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.filter-label{font-size:12px;text-transform:uppercase;letter-spacing:.7px;font-weight:850;color:var(--azul-escuro)}
+.filter-btn,select,.clear-btn{
+  border:0;border-radius:999px;padding:10px 16px;font-weight:850;cursor:pointer;
+  background:#e0f2fe;color:var(--azul-escuro);transition:.18s ease
+}
+.filter-btn:hover,.clear-btn:hover{transform:translateY(-2px);box-shadow:0 9px 18px rgba(0,64,119,.16)}
+.filter-btn.active,.clear-btn{background:var(--azul-principal);color:#fff}
+select{border:1px solid var(--borda);background:#fff;min-width:190px}
+.info{
+  border-left:6px solid var(--azul-claro);border-radius:14px;padding:16px 18px;
+  color:#17324d;font-weight:700;line-height:1.55;margin-bottom:20px
+}
+.cards{display:grid;grid-template-columns:repeat(7,1fr);gap:15px;margin-bottom:22px}
+.card{
+  position:relative;overflow:hidden;border-radius:16px;padding:19px;min-height:138px;
+  background:linear-gradient(180deg,#fff 0%,#f8fcff 100%);
+  transition:transform .24s ease,box-shadow .24s ease,border-color .24s ease
+}
+.card:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--azul-escuro),var(--azul-claro))}
+.card:after{content:"";position:absolute;width:120px;height:120px;right:-55px;bottom:-68px;border-radius:50%;background:rgba(52,144,206,.10)}
+.card:hover{transform:translateY(-6px) scale(1.012);box-shadow:var(--shadow-strong);border-color:var(--azul-claro)}
+.card h3{position:relative;z-index:1;margin:0 0 12px;color:#52657d;font-size:12px;text-transform:uppercase;letter-spacing:.7px}
+.card .num{position:relative;z-index:1;font-size:31px;font-weight:850;color:var(--azul-principal);letter-spacing:-1px}
+.card .sub{position:relative;z-index:1;margin-top:8px;color:var(--muted);font-size:12px;font-weight:700;line-height:1.35}
+.delta.up{color:var(--verde)!important}.delta.down{color:var(--vermelho)!important}.delta.neutral{color:var(--laranja)!important}
+.grid-2{display:grid;grid-template-columns:1.65fr 1fr;gap:18px}
+.grid-2.equal{grid-template-columns:1fr 1fr}
+.panel{border-radius:16px;overflow:hidden;margin-bottom:22px;transition:.24s ease}
+.panel:hover{box-shadow:var(--shadow-strong)}
+.panel-title{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:14px 18px;color:#fff;font-weight:850;
+  background:linear-gradient(135deg,var(--azul-escuro),var(--azul-principal),var(--azul-claro))
+}
+.panel-title small{font-size:11px;color:#dbeafe;font-weight:700}
+.panel-body{padding:18px}
+.apex-chart-host{width:100%;height:335px;min-height:335px}
+.kpi-comparison{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+.compare-box{padding:16px;border:1px solid var(--borda);border-radius:14px;background:#f8fbff}
+.compare-box strong{display:block;color:var(--azul-escuro);font-size:13px;margin-bottom:6px}
+.compare-box span{font-size:26px;font-weight:850;color:var(--azul-principal)}
+.compare-box small{display:block;color:var(--muted);margin-top:6px;font-weight:700}
+table{width:100%;border-collapse:collapse}
+th{background:#eef6fc;color:var(--azul-escuro);text-align:left;padding:12px;font-size:12px;text-transform:uppercase;border-bottom:1px solid var(--borda)}
+td{padding:12px;border-bottom:1px solid #edf4fa;font-size:14px}
+tbody tr{transition:.16s ease}tbody tr:hover{background:#f8fbff;transform:scale(1.002)}
+.badge{display:inline-flex;padding:6px 11px;border-radius:999px;background:#e0f2fe;color:var(--azul-escuro);font-weight:850;font-size:12px}
+.trend-up{color:var(--verde);font-weight:850}.trend-down{color:var(--vermelho);font-weight:850}.trend-flat{color:var(--laranja);font-weight:850}
+.executive-reading{
+      margin-top:14px;padding:15px 17px;border-radius:14px;
+      background:#eef6fc;border:1px solid var(--borda);
+      border-left:5px solid var(--azul-claro);color:#17324d;
+      font-size:13px;font-weight:700;line-height:1.55
+    }
+    body.dark-mode .executive-reading{background:#10263c;color:#dbeafe}
+    .insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.insight-card{border:1px solid var(--borda);border-radius:14px;padding:16px;background:#f8fbff}
+.insight-card h4{margin:0 0 7px;color:var(--azul-escuro);font-size:13px}
+.insight-card p{margin:0;color:#334155;line-height:1.5;font-size:13px;font-weight:650}
+.footer{text-align:center;padding:24px;color:var(--muted);font-size:13px}
+.theme-toggle{
+  position:fixed;right:22px;top:70px;z-index:9999;width:48px;height:48px;border:0;border-radius:16px;
+  background:rgba(255,255,255,.94);color:var(--azul-escuro);font-size:21px;cursor:pointer;
+  box-shadow:0 12px 30px rgba(0,64,119,.24);transition:.2s ease
+}
+.theme-toggle:hover{transform:translateY(-3px) rotate(-5deg)}
+body.dark-mode{
+  --fundo:#07111f;--texto:#eaf4ff;--muted:#9fb4ca;--borda:#1f3852;--glass-bg:rgba(15,29,45,.86);
+  background:radial-gradient(circle at top left,rgba(52,144,206,.20),transparent 30%),#07111f
+}
+body.dark-mode .card,body.dark-mode .panel,body.dark-mode .pbi-toolbar,body.dark-mode .info{
+  background:linear-gradient(180deg,rgba(15,29,45,.94),rgba(10,22,35,.94));color:var(--texto)
+}
+body.dark-mode select,body.dark-mode .compare-box,body.dark-mode .insight-card{background:#10263c;color:#eaf4ff;border-color:#1f3852}
+body.dark-mode th{background:#10263c}body.dark-mode tbody tr:hover{background:#10263c}
+body.dark-mode .theme-toggle{background:#10263c;color:#dbeafe}
+body.dark-mode .info,body.dark-mode .insight-card p{color:#dbeafe}
+.pulse{animation:pulse 1.8s infinite}@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(52,144,206,.22)}50%{box-shadow:0 0 0 8px rgba(52,144,206,0)}}
+@media(max-width:1100px){.cards{grid-template-columns:repeat(3,1fr)}.grid-2,.grid-2.equal{grid-template-columns:1fr}.header{grid-template-columns:1fr;text-align:center}.logo{margin:auto}.update{text-align:center;margin-top:12px}}
+@media(max-width:720px){.cards,.insight-grid{grid-template-columns:1fr}.container{max-width:calc(100% - 24px)}.topbar{padding:12px 16px 0}.title h1{font-size:25px}.menu{overflow-x:auto;justify-content:flex-start}.theme-toggle{top:auto;bottom:20px}.kpi-comparison{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Alternar tema">🌙</button>
+<header class="topbar">
+  <div class="header">
+    <div><img class="logo" src="http://mobile.detran.sp.gov.br/wps/wcm/connect/c35a0daa-ec74-44f3-a00d-efc4f4d28168/POLI_VERTICAL.png?MOD=AJPERES&CVID=oCIb7a0&useDefaultText=1&useDefaultDesc=0"></div>
+    <div class="title">
+      <h1>Painel Comparativo de Bloqueios</h1>
+      <p>Motivos 2, E e F • Comparativo por UF • Evolução, altas e quedas mensais</p>
+    </div>
+    <div class="update">Base analisada até:<br><strong>15/07/2026</strong></div>
+  </div>
+  <nav class="menu">
+    <button class="active">Visão Executiva</button>
+    <button onclick="document.getElementById('evolucao').scrollIntoView()">Evolução Mensal</button>
+    <button onclick="document.getElementById('ranking').scrollIntoView()">Altas e Quedas</button>
+    <button onclick="document.getElementById('tendencias').scrollIntoView()">Altas e Quedas</button>
+  </nav>
+</header>
+
+<main class="container">
+  <div class="page-title">
+    <h2>Visão Geral dos Bloqueios</h2>
+    <p>Selecione o motivo e o período para atualizar automaticamente todos os indicadores e gráficos.</p>
+  </div>
+
+  <div class="info">
+    Base recalculada diretamente da nova planilha: <strong>470.824 bloqueios</strong>, sendo <strong>464.119</strong> do motivo 2, <strong>6.694</strong> do motivo E e <strong>11</strong> do motivo F. A coluna <strong>uf_bloqueio</strong> não possui a sigla IF; por isso, o comparativo principal permanece entre <strong>SP e JU</strong>.
+  </div>
+
+  <div class="pbi-toolbar">
+    <div class="filter-group">
+      <span class="filter-label">Motivo do bloqueio</span>
+      <button class="filter-btn active" data-motivo="2">Motivo 2</button>
+      <button class="filter-btn" data-motivo="E">Motivo E</button>
+      <button class="filter-btn" data-motivo="F">Motivo F</button>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Período</span>
+      <select id="periodo">
+        <option value="all">Jan/2025 a Jul/2026</option>
+        <option value="2026">Somente 2026</option>
+        <option value="12">Últimos 12 meses</option>
+        <option value="6">Últimos 6 meses</option>
+      </select>
+      <button class="clear-btn" id="limparFiltros">Limpar filtros</button>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h3>Total geral da base</h3><div class="num" id="kGeral">-</div><div class="sub">Todos os motivos da planilha</div></div>
+    <div class="card"><h3>Total do motivo filtrado</h3><div class="num" id="kTotal">-</div><div class="sub">Motivo e período selecionados</div></div><div class="card"><h3>Bloqueios em SP</h3><div class="num" id="kSP">-</div><div class="sub" id="subSP">Participação no total</div></div>
+    <div class="card"><h3>Bloqueios em JU</h3><div class="num" id="kJU">-</div><div class="sub" id="subJU">Participação no total</div></div>
+    <div class="card"><h3>Diferença SP × JU</h3><div class="num" id="kDif">-</div><div class="sub">Diferença absoluta no período</div></div>
+    <div class="card pulse"><h3>Variação mensal SP</h3><div class="num delta" id="kVarSP">-</div><div class="sub">Último mês contra o anterior</div></div>
+    <div class="card pulse"><h3>Variação mensal JU</h3><div class="num delta" id="kVarJU">-</div><div class="sub">Último mês contra o anterior</div></div>
+  </div>
+
+  <section id="evolucao" class="grid-2">
+    <div class="panel">
+      <div class="panel-title"><span>Evolução mensal — SP × JU</span><small>Clique na legenda para ocultar uma série</small></div>
+      <div class="panel-body"><div id="chartEvolucao" class="apex-chart-host"></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span>Participação no período</span><small>SP, JU e demais UFs</small></div>
+      <div class="panel-body">
+        <div id="chartParticipacao" class="apex-chart-host"></div>
+        <div class="kpi-comparison">
+          <div class="compare-box"><strong>Concentração em SP</strong><span id="compSP">-</span><small id="compSPText">do volume analisado</small></div>
+          <div class="compare-box"><strong>Relação SP / JU</strong><span id="razaoSPJU">-</span><small>vezes o volume de JU</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+<section id="ranking" class="grid-2 equal">
+  <div class="panel">
+    <div class="panel-title"><span>Altas e quedas mensais — SP</span><small>Variação percentual mês contra mês</small></div>
+    <div class="panel-body">
+      <div id="chartVariacaoSP" class="apex-chart-host"></div>
+      <div class="executive-reading" id="leituraSP"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><span>Altas e quedas mensais — JU</span><small>Variação percentual mês contra mês</small></div>
+    <div class="panel-body">
+      <div id="chartVariacaoJU" class="apex-chart-host"></div>
+      <div class="executive-reading" id="leituraJU"></div>
+    </div>
+  </div>
+</section>
+
+  <section id="tendencias" class="panel">
+    <div class="panel-title"><span>Leitura de altas e quedas</span><small>Último mês disponível versus mês anterior</small></div>
+    <div class="panel-body">
+      <table>
+        <thead><tr><th>UF</th><th>Último mês</th><th>Mês anterior</th><th>Diferença</th><th>Variação</th><th>Tendência</th></tr></thead>
+        <tbody id="tabelaTendencia"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title"><span>Leitura Executiva</span><small>Resumo automático do filtro selecionado</small></div>
+    <div class="panel-body"><div class="insight-grid" id="insights"></div></div>
+  </section>
+</main>
+
+<div class="footer">DETRAN-SP • Painel analítico de bloqueios • 470.824 registros recalculados da nova planilha</div>
+
+<script>
+const D={"months":["2022-01","2022-02","2022-03","2022-04","2022-05","2022-06","2022-07","2022-08","2022-09","2022-10","2022-11","2022-12","2023-01","2023-02","2023-03","2023-04","2023-05","2023-06","2023-07","2023-08","2023-09","2023-10","2023-11","2023-12","2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07"],"series":{"2":{"":[0,0,0,0,0,174,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AC":[0,1,2,2,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1,1,0,2,2,0,1,0,0,1,0,1,1,0,0,0,0,1,2,0,0,0,0,2,0,1,0,1,0,1,0,0,0,1,0],"AL":[1,1,0,1,0,1,1,0,1,0,0,0,1,2,0,0,2,0,1,0,1,0,0,0,0,0,0,0,0,2,1,1,1,0,2,0,0,0,0,3,0,0,0,4,1,2,1,5,1,1,1,0,1,2,2],"AM":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,2,0,1,1,1,0],"AP":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1,0],"BA":[0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,6,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],"CE":[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"DF":[0,0,0,0,0,0,0,1,1,4,0,1,1,0,0,0,0,0,0,0,0,0,1,3,0,0,0,3,1,0,0,5,3,1,0,7,8,32,3,13,14,42,56,27,47,0,0,0,0,0,0,0,0,0,0],"ES":[3,1,0,1,1,0,0,3,0,0,1,0,0,0,2,0,0,1,0,0,1,0,8,1,0,6,0,0,5,3,0,1,4,0,0,0,0,2,1,0,1,0,2,0,1,3,1,2,3,3,47,8,0,0,0],"GO":[0,2,0,0,0,2,0,0,0,0,5,0,2,3,4,8,6,2,2,20,6,3,4,2,1,0,1,0,0,0,1,1,1,2,3,0,1,8,3,9,0,4,4,0,0,4,1,0,1,0,0,1,3,2,2],"JU":[0,0,0,0,0,0,0,0,2,0,3,0,2,2,8,9,30,19,35,31,39,30,27,22,35,80,84,103,82,78,103,124,157,133,131,70,102,182,125,129,180,182,147,239,268,216,200,180,150,172,319,173,273,311,122],"MG":[2,3,3,0,2,2,2,2,3,3,2,3,2,6,4,8,9,16,11,2,6,7,4,3,9,1,3,4,0,1,4,0,3,4,0,1,0,3,1,1,2,1,7,3,15,6,7,3,2,2,8,8,4,4,6],"MS":[0,3,61,1,26,0,7,8,2,13,0,25,0,0,10,2,0,15,2,3,22,12,15,4,4,0,15,0,14,23,0,6,8,0,7,5,12,12,6,23,6,8,5,8,11,17,21,6,25,3,15,69,27,26,4],"MT":[0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,1,0,0,0,3,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1,0,0,0,2,1,1,0,1,1,2,4,1,4],"OL":[7,10,13,11,12,24,897,24,39,28,32,12,12,20,902,10,42,21,47,914,892,23,14,15,14,6,907,23,1770,898,36,896,14,11,16,11,1,11,1,2,5,7,0,1,7,3,2,4,11,9,11,14,6,9,876],"PA":[0,0,1,1,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PB":[0,1,0,0,2,6,2,1,1,0,0,0,0,0,1,1,0,0,0,2,0,4,0,4,0,3,1,0,0,0,0,7,4,1,1,4,2,2,3,10,9,0,1,4,0,1,4,0,1,0,0,1,4,1,0],"PE":[7,0,1,1,3,2,4,2,1,2,1,0,0,1,1,0,0,0,0,1,0,3,1,2,3,3,3,3,0,0,0,1,1,2,4,4,4,2,9,13,1,0,7,0,2,4,2,1,4,2,5,0,3,1,3],"PI":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],"PR":[3,1,0,16,100,18,2,5,13,45,10,28,25,25,30,15,21,7,2,1,21,13,21,7,6,5,5,9,7,5,2,8,8,7,6,9,5,35,3,17,14,12,5,5,7,7,5,13,8,6,10,3,10,8,3],"RJ":[0,0,2,4,0,0,0,3,0,2,0,2,1,2,2,2,18,11,2,9,5,13,11,2,29,10,1,1,4,18,7,7,13,8,12,8,76,31,9,7,16,11,13,24,11,19,32,15,13,10,16,13,17,18,5],"RN":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,2,1,1,1,4,2,0,0,0,1,0,4,3,1,0],"RO":[2,0,0,0,0,1,2,0,0,1,1,1,1,3,7,1,1,1,1,0,1,7,2,0,0,1,2,0,0,0,1,0,0,4,0,0,0,0,2,875,0,0,0,0,1,0,0,2,0,0,0,2,0,0,0],"RR":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,1,0,0,0,1,0,0,1,0],"RS":[1,0,1,0,1,1,0,3,0,3,7,8,6,5,2,3,4,0,1,2,3,1,4,0,7,3,1,13,0,5,1,1,0,10,4,0,0,0,0,0,0,0,0,2,4,3,1,2,6,4,0,0,1,0,0],"SC":[11,11,4,9,23,15,15,37,14,8,19,16,7,9,8,6,6,15,8,3,7,9,14,12,8,25,8,4,13,10,10,5,10,11,6,1,0,1,2,3,11,2,4,6,8,8,16,9,3,17,4,11,12,7,7],"SE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,3,5,3,3,3,1,2,0,1,0,0,0,1,3,1,1,2,4,1,4,0,1,0,1,2,0,0,0,0,0],"SP":[3355,196,191,163,79258,2932,396,362,261,949,253,224,2819,20128,4101,216,284,324,589,768,4926,10707,9057,358,386,394,726,519,131,130,194,261,668,594,806,678,9051,55732,26208,18557,48155,51484,25791,7763,2214,6594,7895,6959,6868,1961,3172,2191,2226,7637,5866],"TO":[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},"E":{"":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AC":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],"AL":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AM":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AP":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"BA":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"CE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"DF":[0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],"ES":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"GO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"JU":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,1,1,1,0,0,0,3,6,4,5,13,11,20,12,4,4,4,13,8,11,5,7,3,12,11,5,6,3,0],"MG":[0,0,0,0,0,0,0,0,1,2,0,0,1,0,1,3,2,0,1,1,1,0,2,1,0,1,3,0,0,0,1,0,0,1,0,1,0,0,1,1,0,1,0,0,1,1,0,0,2,2,2,0,0,0,0],"MS":[0,1,1,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,1,2,0,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],"MT":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"OL":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PA":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PB":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,2,0,0,1,1,0,0,0,0,0],"PI":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PR":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RJ":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RN":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],"RR":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RS":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"SC":[0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],"SE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"SP":[65,133,172,110,146,174,112,163,160,167,173,180,103,121,130,155,140,124,87,225,154,194,165,105,82,70,75,59,60,80,91,128,73,88,71,84,78,74,94,95,103,121,163,129,104,154,124,84,106,86,107,124,129,96,52],"TO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0]},"F":{"":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AC":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AL":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AM":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AP":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"BA":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"CE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"DF":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"ES":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"GO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"JU":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"MG":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"MS":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"MT":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"OL":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PA":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PB":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PI":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PR":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RJ":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RN":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RR":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RS":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"SC":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"SE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"SP":[0,0,0,0,0,1,2,0,1,0,0,0,0,0,2,0,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"TO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}},"motivoTotals":{"2":464119,"E":6694,"F":11},"grandTotal":470824,"ufTotals":{"SP":451079,"JU":5286,"SC":534,"MT":27,"MS":629,"OL":9603,"PE":128,"AL":44,"MG":252,"GO":124,"PR":682,"RJ":565,"PB":89,"RN":29,"AP":10,"AC":27,"RR":7,"AM":8,"RS":125,"ES":116,"RO":929,"TO":4,"SE":45,"DF":281,"BA":10,"PI":4,"PA":6,"CE":7,"":174}};
+let motivo="2";
+let charts={};
+const fmt=n=>new Intl.NumberFormat("pt-BR").format(n||0);
+const pct=(a,b)=>b?((a-b)/b*100):null;
+const pctTxt=v=>v===null?"—":`${v>=0?"+":""}${v.toFixed(1).replace(".",",")}%`;
+const mesTxt=s=>{const [a,m]=s.split("-");return `${m}/${a}`};
+
+function recorte(arr){
+  const p=document.getElementById("periodo").value;
+  if(p==="2026"){const i=D.months.findIndex(x=>x.startsWith("2026"));return [D.months.slice(i),arr.slice(i)]}
+  if(p==="12")return [D.months.slice(-12),arr.slice(-12)];
+  if(p==="6")return [D.months.slice(-6),arr.slice(-6)];
+  return [D.months,arr];
+}
+function serie(uf){
+  const base=(D.series[motivo]&&D.series[motivo][uf])||D.months.map(()=>0);
+  return recorte(base);
+}
+function somaPeriodo(uf){
+  const [,a]=serie(uf);return a.reduce((x,y)=>x+y,0);
+}
+function totalPeriodo(){
+  const ufs=Object.keys(D.series[motivo]||{});
+  return ufs.reduce((acc,uf)=>acc+somaPeriodo(uf),0);
+}
+function classeDelta(v){
+  if(v===null||v===0)return "neutral";
+  return v>0?"up":"down";
+}
+function tendencia(v){
+  if(v===null)return ["Sem base","trend-flat"];
+  if(v>0)return ["Alta","trend-up"];
+  if(v<0)return ["Queda","trend-down"];
+  return ["Estável","trend-flat"];
+}
+function destruir(){
+  Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});
+  charts={};
+}
+
+function variacoes(arr){
+  return arr.map((valor,i)=>{
+    if(i===0) return null;
+    const anterior=arr[i-1];
+    if(!anterior) return valor===0?0:null;
+    return ((valor-anterior)/anterior)*100;
+  });
+}
+function resumoVariacao(nome, meses, valores, variacoesMes){
+  const validas=variacoesMes.map((v,i)=>({v,i})).filter(x=>x.v!==null && Number.isFinite(x.v));
+  if(!validas.length) return `<strong>${nome}:</strong> não há meses suficientes para calcular variação.`;
+  const maiorAlta=validas.reduce((a,b)=>b.v>a.v?b:a);
+  const maiorQueda=validas.reduce((a,b)=>b.v<a.v?b:a);
+  const atual=validas.at(-1);
+  const tendenciaAtual=atual.v>0?"alta":atual.v<0?"queda":"estabilidade";
+  return `<strong>${nome}:</strong> o último movimento foi de <strong>${tendenciaAtual}</strong> em ${mesTxt(meses[atual.i])}, com <strong>${pctTxt(atual.v)}</strong>. 
+  A maior alta do período ocorreu em <strong>${mesTxt(meses[maiorAlta.i])}</strong> (${pctTxt(maiorAlta.v)}) e a maior queda em <strong>${mesTxt(meses[maiorQueda.i])}</strong> (${pctTxt(maiorQueda.v)}).`;
+}
+function render(){
+  const total=totalPeriodo(),sp=somaPeriodo("SP"),ju=somaPeriodo("JU"),demais=Math.max(0,total-sp-ju);
+  const [meses,spSerie]=serie("SP"),[,juSerie]=serie("JU");
+  const spAtual=spSerie.at(-1)||0,spAnt=spSerie.at(-2)||0,juAtual=juSerie.at(-1)||0,juAnt=juSerie.at(-2)||0;
+  const varSP=pct(spAtual,spAnt),varJU=pct(juAtual,juAnt);
+  const variacaoSP=variacoes(spSerie),variacaoJU=variacoes(juSerie);
+
+  kGeral.textContent=fmt(D.grandTotal);
+  kTotal.textContent=fmt(total);kSP.textContent=fmt(sp);kJU.textContent=fmt(ju);kDif.textContent=fmt(Math.abs(sp-ju));
+  subSP.textContent=`${total?((sp/total)*100).toFixed(1).replace(".",","):0}% do total filtrado`;
+  subJU.textContent=`${total?((ju/total)*100).toFixed(1).replace(".",","):0}% do total filtrado`;
+  kVarSP.textContent=pctTxt(varSP);kVarSP.className=`num delta ${classeDelta(varSP)}`;
+  kVarJU.textContent=pctTxt(varJU);kVarJU.className=`num delta ${classeDelta(varJU)}`;
+  compSP.textContent=`${total?((sp/total)*100).toFixed(1).replace(".",","):0}%`;
+  razaoSPJU.textContent=ju?(sp/ju).toFixed(1).replace(".",","):"—";
+
+  destruir();
+  const dark=document.body.classList.contains("dark-mode");
+  const fore=dark?"#dbeafe":"#475569";
+  const grid=dark?"#1f3852":"#e5eef6";
+
+  charts.evolucao=new ApexCharts(document.querySelector("#chartEvolucao"),{
+    chart:{type:"area",height:335,toolbar:{show:false},animations:{enabled:true,easing:"easeinout",speed:700}},
+    series:[{name:"SP",data:spSerie},{name:"JU",data:juSerie}],
+    xaxis:{categories:meses.map(mesTxt),labels:{style:{colors:fore}}},
+    yaxis:{labels:{formatter:fmt,style:{colors:fore}}},
+    stroke:{curve:"smooth",width:3},fill:{type:"gradient",gradient:{shadeIntensity:1,opacityFrom:.35,opacityTo:.05}},
+    dataLabels:{enabled:false},markers:{size:3},grid:{borderColor:grid},
+    legend:{position:"top",horizontalAlign:"right",labels:{colors:fore}},
+    tooltip:{y:{formatter:fmt}}
+  });charts.evolucao.render();
+
+  charts.participacao=new ApexCharts(document.querySelector("#chartParticipacao"),{
+    chart:{type:"donut",height:335},series:[sp,ju,demais],labels:["SP","JU","Demais UFs"],
+    legend:{position:"bottom",labels:{colors:fore}},dataLabels:{formatter:v=>v.toFixed(1)+"%"},
+    plotOptions:{pie:{donut:{size:"68%",labels:{show:true,total:{show:true,label:"Total filtrado",formatter:()=>fmt(total)},value:{formatter:v=>fmt(Number(v))}}}}},
+    tooltip:{y:{formatter:fmt}}
+  });charts.participacao.render();
+
+  charts.variacaoSP=new ApexCharts(document.querySelector("#chartVariacaoSP"),{
+    chart:{type:"bar",height:335,toolbar:{show:false}},
+    series:[{name:"Variação SP",data:variacaoSP.map(v=>v===null?0:Number(v.toFixed(2)))}],
+    xaxis:{categories:meses.map(mesTxt),labels:{rotate:-45,style:{colors:fore}}},
+    yaxis:{labels:{formatter:v=>`${v.toFixed(0)}%`,style:{colors:fore}}},
+    plotOptions:{bar:{borderRadius:4,columnWidth:"70%",colors:{ranges:[
+      {from:-999999,to:-0.0001,color:"#c73d4d"},
+      {from:0,to:999999,color:"#16865a"}
+    ]}}},
+    dataLabels:{enabled:false},grid:{borderColor:grid},
+    tooltip:{y:{formatter:v=>`${v>=0?"+":""}${v.toFixed(1).replace(".",",")}%`}}
+  });charts.variacaoSP.render();
+
+  charts.variacaoJU=new ApexCharts(document.querySelector("#chartVariacaoJU"),{
+    chart:{type:"bar",height:335,toolbar:{show:false}},
+    series:[{name:"Variação JU",data:variacaoJU.map(v=>v===null?0:Number(v.toFixed(2)))}],
+    xaxis:{categories:meses.map(mesTxt),labels:{rotate:-45,style:{colors:fore}}},
+    yaxis:{labels:{formatter:v=>`${v.toFixed(0)}%`,style:{colors:fore}}},
+    plotOptions:{bar:{borderRadius:4,columnWidth:"70%",colors:{ranges:[
+      {from:-999999,to:-0.0001,color:"#c73d4d"},
+      {from:0,to:999999,color:"#16865a"}
+    ]}}},
+    dataLabels:{enabled:false},grid:{borderColor:grid},
+    tooltip:{y:{formatter:v=>`${v>=0?"+":""}${v.toFixed(1).replace(".",",")}%`}}
+  });charts.variacaoJU.render();
+
+  leituraSP.innerHTML=resumoVariacao("SP",meses,spSerie,variacaoSP);
+  leituraJU.innerHTML=resumoVariacao("JU",meses,juSerie,variacaoJU);
+
+  const linhas=[["SP",spAtual,spAnt,varSP],["JU",juAtual,juAnt,varJU]];
+  tabelaTendencia.innerHTML=linhas.map(([uf,atual,ant,v])=>{
+    const [txt,cl]=tendencia(v);
+    return `<tr><td><span class="badge">${uf}</span></td><td>${fmt(atual)}</td><td>${fmt(ant)}</td><td>${fmt(atual-ant)}</td><td class="${cl}">${pctTxt(v)}</td><td class="${cl}">${txt}</td></tr>`;
+  }).join("");
+
+  const lider=sp>=ju?"SP":"JU";
+  const maiorVar=(Math.abs(varSP||0)>=Math.abs(varJU||0))?["SP",varSP]:["JU",varJU];
+  insights.innerHTML=`
+    <div class="insight-card"><h4>Volume da base</h4><p>A planilha possui <strong>${fmt(D.grandTotal)}</strong> registros. O motivo ${motivo} representa <strong>${fmt(total)}</strong> no recorte selecionado.</p></div>
+    <div class="insight-card"><h4>Concentração</h4><p><strong>${lider}</strong> concentra o maior volume entre SP e JU, com ${fmt(Math.max(sp,ju))} registros.</p></div>
+    <div class="insight-card"><h4>Movimento mais intenso</h4><p><strong>${maiorVar[0]}</strong> apresentou a maior oscilação no último mês: ${pctTxt(maiorVar[1])}.</p></div>`;
+}
+document.querySelectorAll(".filter-btn").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll(".filter-btn").forEach(x=>x.classList.remove("active"));
+  btn.classList.add("active");motivo=btn.dataset.motivo;render();
+}));
+periodo.addEventListener("change",render);
+limparFiltros.addEventListener("click",()=>{
+  motivo="2";periodo.value="all";
+  document.querySelectorAll(".filter-btn").forEach(x=>x.classList.toggle("active",x.dataset.motivo==="2"));
+  render();
+});
+themeToggle.addEventListener("click",()=>{
+  document.body.classList.toggle("dark-mode");
+  themeToggle.textContent=document.body.classList.contains("dark-mode")?"☀️":"🌙";
+  render();
+});
+render();
+</script>
+</body>
+</html>
