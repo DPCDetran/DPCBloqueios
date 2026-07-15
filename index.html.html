@@ -116,7 +116,9 @@ select{border:1px solid var(--borda);background:#fff;min-width:190px}
 .card .num{position:relative;z-index:1;font-size:31px;font-weight:850;color:var(--azul-principal);letter-spacing:-1px}
 .card .sub{position:relative;z-index:1;margin-top:8px;color:var(--muted);font-size:12px;font-weight:700;line-height:1.35}
 .delta.up{color:var(--verde)!important}.delta.down{color:var(--vermelho)!important}.delta.neutral{color:var(--laranja)!important}
-.grid-2{display:grid;grid-template-columns:1.65fr 1fr;gap:18px}
+.grid-2{display:grid;grid-template-columns:1.7fr 1fr;gap:18px}
+#evolucao .panel:first-child{border-top:4px solid var(--azul-principal)}
+#evolucao .panel:last-child{border-top:4px solid var(--azul-claro)}
 .grid-2.equal{grid-template-columns:1fr 1fr}
 .panel{border-radius:16px;overflow:hidden;margin-bottom:22px;transition:.24s ease}
 .panel:hover{box-shadow:var(--shadow-strong)}
@@ -272,11 +274,11 @@ section{
 
   <section id="evolucao" class="grid-2">
     <div class="panel">
-      <div class="panel-title"><span>Evolução mensal — SP × JU</span><small>Datas exibidas trimestralmente; passe o mouse para ver cada mês</small></div>
+      <div class="panel-title"><span>Movimento mensal dos bloqueios</span><small>SP em colunas e JU em linha para destacar escala e tendência</small></div>
       <div class="panel-body"><div id="chartEvolucao" class="apex-chart-host"></div></div>
     </div>
     <div class="panel">
-      <div class="panel-title"><span>Participação no período</span><small>SP, JU e demais UFs</small></div>
+      <div class="panel-title"><span>Distribuição territorial</span><small>Comparação direta por volume e participação percentual</small></div>
       <div class="panel-body">
         <div id="chartParticipacao" class="apex-chart-host"></div>
         <div class="kpi-comparison">
@@ -508,34 +510,52 @@ function render(){
   const grid=dark?"#1f3852":"#e5eef6";
 
   charts.evolucao=new ApexCharts(document.querySelector("#chartEvolucao"),{
-    chart:{type:"area",height:335,toolbar:{show:false},animations:{enabled:true,easing:"easeinout",speed:700}},
-    series:[{name:"SP",data:spSerie},{name:"JU",data:juSerie}],
+    chart:{type:"line",height:335,toolbar:{show:false},stacked:false,animations:{enabled:true,easing:"easeinout",speed:700}},
+    series:[
+      {name:"SP",type:"column",data:spSerie},
+      {name:"JU",type:"line",data:juSerie}
+    ],
     xaxis:{
       categories:meses.map(mesTxt),
       tickPlacement:"on",
       labels:{
-        rotate:0,
-        rotateAlways:false,
-        hideOverlappingLabels:true,
-        trim:false,
-        minHeight:34,
-        maxHeight:48,
-        formatter:labelTrimestral,
+        rotate:0,rotateAlways:false,hideOverlappingLabels:true,trim:false,
+        minHeight:34,maxHeight:48,formatter:labelTrimestral,
         style:{colors:fore,fontSize:"11px"}
       }
     },
-    yaxis:{labels:{formatter:fmt,style:{colors:fore}}},
-    stroke:{curve:"smooth",width:3},fill:{type:"gradient",gradient:{shadeIntensity:1,opacityFrom:.35,opacityTo:.05}},
-    dataLabels:{enabled:false},markers:{size:3},grid:{borderColor:grid},
+    yaxis:[
+      {seriesName:"SP",labels:{formatter:fmt,style:{colors:fore}},title:{text:"Volume SP",style:{color:fore}}},
+      {seriesName:"JU",opposite:true,labels:{formatter:fmt,style:{colors:fore}},title:{text:"Volume JU",style:{color:fore}}}
+    ],
+    stroke:{width:[0,4],curve:"smooth"},
+    plotOptions:{bar:{columnWidth:"56%",borderRadius:5}},
+    fill:{opacity:[.88,1]},
+    dataLabels:{enabled:false},markers:{size:[0,4],strokeWidth:2},grid:{borderColor:grid},
     legend:{position:"top",horizontalAlign:"right",labels:{colors:fore}},
-    tooltip:{x:{formatter:value=>value},y:{formatter:fmt}}
+    tooltip:{shared:true,intersect:false,x:{formatter:value=>value},y:{formatter:fmt}}
   });charts.evolucao.render();
 
+  const participacoes=[sp,ju,demais].map(v=>total?Number(((v/total)*100).toFixed(2)):0);
   charts.participacao=new ApexCharts(document.querySelector("#chartParticipacao"),{
-    chart:{type:"donut",height:335},series:[sp,ju,demais],labels:["SP","JU","Demais UFs"],
-    legend:{position:"bottom",labels:{colors:fore}},dataLabels:{formatter:v=>v.toFixed(1)+"%"},
-    plotOptions:{pie:{donut:{size:"68%",labels:{show:true,total:{show:true,label:"Total filtrado",formatter:()=>fmt(total)},value:{formatter:v=>fmt(Number(v))}}}}},
-    tooltip:{x:{formatter:value=>value},y:{formatter:fmt}}
+    chart:{type:"bar",height:335,toolbar:{show:false},animations:{enabled:true,easing:"easeinout",speed:650}},
+    series:[{name:"Volume",data:[sp,ju,demais]}],
+    xaxis:{
+      categories:["SP","JU","Demais UFs"],
+      labels:{formatter:fmt,style:{colors:fore}},
+      title:{text:"Quantidade de bloqueios",style:{color:fore}}
+    },
+    yaxis:{labels:{style:{colors:fore,fontSize:"13px",fontWeight:700}}},
+    plotOptions:{bar:{horizontal:true,borderRadius:7,barHeight:"48%",distributed:true,dataLabels:{position:"top"}}},
+    dataLabels:{
+      enabled:true,
+      textAnchor:"start",
+      offsetX:8,
+      formatter:(v,opts)=>`${fmt(v)}  •  ${participacoes[opts.dataPointIndex].toFixed(1).replace(".",",")}%`,
+      style:{fontSize:"12px",fontWeight:800,colors:[fore]}
+    },
+    legend:{show:false},grid:{borderColor:grid},
+    tooltip:{y:{formatter:(v,opts)=>`${fmt(v)} bloqueios (${participacoes[opts.dataPointIndex].toFixed(1).replace(".",",")}%)`}}
   });charts.participacao.render();
 
   charts.variacaoSP=new ApexCharts(document.querySelector("#chartVariacaoSP"),{
