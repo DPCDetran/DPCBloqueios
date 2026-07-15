@@ -281,7 +281,7 @@ section{
         <div id="chartParticipacao" class="apex-chart-host"></div>
         <div class="kpi-comparison">
           <div class="compare-box"><strong>Concentração em SP</strong><span id="compSP">-</span><small id="compSPText">do volume analisado</small></div>
-          <div class="compare-box"><strong>Relação SP / JU</strong><span id="razaoSPJU">-</span><small>vezes o volume de JU</small></div>
+          <div class="compare-box"><strong>Concentração em JU</strong><span id="razaoSPJU">-</span><small>do volume analisado</small></div>
         </div>
       </div>
     </div>
@@ -500,7 +500,7 @@ function render(){
   kVarSP.textContent=pctTxt(varSP);kVarSP.className=`num delta ${classeDelta(varSP)}`;
   kVarJU.textContent=pctTxt(varJU);kVarJU.className=`num delta ${classeDelta(varJU)}`;
   compSP.textContent=`${total?((sp/total)*100).toFixed(1).replace(".",","):0}%`;
-  razaoSPJU.textContent=ju?(sp/ju).toFixed(1).replace(".",","):"—";
+  razaoSPJU.textContent=total?`${((ju/total)*100).toFixed(1).replace(".",",")}%`:"—";
 
   destruir();
   const dark=document.body.classList.contains("dark-mode");
