@@ -308,10 +308,22 @@ section{
 </section>
 
   <section id="tendencias" class="panel">
-    <div class="panel-title"><span>Leitura de altas e quedas</span><small>Último mês disponível versus mês anterior</small></div>
+    <div class="panel-title">
+      <span>Comparativo entre os meses selecionados</span>
+      <small id="subtituloComparativo">Comparação entre os dois últimos meses do período selecionado</small>
+    </div>
     <div class="panel-body">
       <table>
-        <thead><tr><th>UF</th><th>Último mês</th><th>Mês anterior</th><th>Diferença</th><th>Variação</th><th>Tendência</th></tr></thead>
+        <thead>
+<tr>
+<th>UF</th>
+<th id="colMesAnterior">Penúltimo mês</th>
+<th id="colUltimoMes">Último mês</th>
+<th>Diferença</th>
+<th>Variação</th>
+<th>Tendência</th>
+</tr>
+</thead>
         <tbody id="tabelaTendencia"></tbody>
       </table>
     </div>
@@ -613,10 +625,33 @@ function render(){
   leituraSP.innerHTML=resumoVariacao("SP",meses,spSerie,variacaoSP);
   leituraJU.innerHTML=resumoVariacao("JU",meses,juSerie,variacaoJU);
 
-  const linhas=[["SP",spAtual,spAnt,varSP],["JU",juAtual,juAnt,varJU]];
-  tabelaTendencia.innerHTML=linhas.map(([uf,atual,ant,v])=>{
+  const periodoAnterior=meses.at(-2) || null;
+  const periodoAtual=meses.at(-1) || null;
+
+  function nomePeriodo(periodo, incluirAno=false){
+    if(!periodo) return "—";
+    const [ano,mes]=periodo.split("-");
+    return incluirAno ? `${NOMES_MESES[mes]}/${ano}` : NOMES_MESES[mes];
+  }
+
+  if(periodoAnterior && periodoAtual){
+    const anosDiferentes=periodoAnterior.split("-")[0]!==periodoAtual.split("-")[0];
+    const nomeAnterior=nomePeriodo(periodoAnterior,anosDiferentes);
+    const nomeAtual=nomePeriodo(periodoAtual,anosDiferentes);
+
+    document.getElementById("colMesAnterior").textContent=nomeAnterior;
+    document.getElementById("colUltimoMes").textContent=nomeAtual;
+    document.getElementById("subtituloComparativo").textContent=`Comparação entre ${nomeAnterior} e ${nomeAtual}`;
+  }else{
+    document.getElementById("colMesAnterior").textContent="Mês anterior";
+    document.getElementById("colUltimoMes").textContent=periodoAtual?nomePeriodo(periodoAtual):"Mês atual";
+    document.getElementById("subtituloComparativo").textContent="Selecione pelo menos dois meses para realizar a comparação";
+  }
+
+  const linhas=[["SP",spAnt,spAtual,varSP],["JU",juAnt,juAtual,varJU]];
+  tabelaTendencia.innerHTML=linhas.map(([uf,ant,atual,v])=>{
     const [txt,cl]=tendencia(v);
-    return `<tr><td><span class="badge">${uf}</span></td><td>${fmt(atual)}</td><td>${fmt(ant)}</td><td>${fmt(atual-ant)}</td><td class="${cl}">${pctTxt(v)}</td><td class="${cl}">${txt}</td></tr>`;
+    return `<tr><td><span class="badge">${uf}</span></td><td>${fmt(ant)}</td><td>${fmt(atual)}</td><td>${fmt(atual-ant)}</td><td class="${cl}">${pctTxt(v)}</td><td class="${cl}">${txt}</td></tr>`;
   }).join("");
 
   const lider=sp>=ju?"SP":"JU";
