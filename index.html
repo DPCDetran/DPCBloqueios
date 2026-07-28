@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta name="painel-build" content="20260728165827">
+<meta charset="UTF-8">
+<title>Painel Comparativo de Bloqueios</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<style>
+:root{
+  --azul-principal:#005CA8;--azul-claro:#3490CE;--azul-escuro:#004077;
+  --fundo:#f3f7fb;--branco:#fff;--texto:#10243f;--muted:#64748b;
+  --borda:#d7e6f2;--verde:#16865a;--vermelho:#c73d4d;--laranja:#d97706;
+  --shadow-soft:0 10px 25px rgba(0,64,119,.10);
+  --shadow-strong:0 20px 42px rgba(0,64,119,.22);
+  --glass-bg:rgba(255,255,255,.86);
+}
+*{box-sizing:border-box;font-family:"Segoe UI",Arial,sans-serif}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--texto);
+  background:
+    radial-gradient(circle at top left,rgba(52,144,206,.13),transparent 34%),
+    radial-gradient(circle at top right,rgba(0,92,168,.10),transparent 28%),
+    var(--fundo);
+}
+.topbar{
+  position:relative;overflow:hidden;color:#fff;padding:12px 34px 0;
+  background:linear-gradient(135deg,var(--azul-escuro),var(--azul-principal));
+  box-shadow:0 14px 34px rgba(0,64,119,.22)
+}
+.topbar:before{content:"";position:absolute;right:-70px;top:-100px;width:280px;height:280px;border-radius:50%;background:rgba(255,255,255,.12)}
+.topbar:after{content:"";position:absolute;left:-90px;bottom:-140px;width:300px;height:300px;border-radius:50%;background:rgba(52,144,206,.18)}
+.header{position:relative;z-index:1;display:grid;grid-template-columns:220px 1fr 220px;align-items:center;min-height:85px}
+.logo{width:210px;height:auto;display:block;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,.22))}
+.title{text-align:center}
+.title h1{margin:0;font-size:31px;font-weight:850;letter-spacing:-.7px;text-shadow:0 3px 12px rgba(0,0,0,.18)}
+.title p{margin:8px 0 0;color:#dbeafe;font-size:15px}
+.update{text-align:right;font-size:13px;font-weight:750;color:#e0f2fe}
+.menu{position:relative;z-index:1;margin-top:14px;display:flex;justify-content:center;gap:10px}
+.menu button{border:0;background:transparent;color:#fff;padding:17px 26px;font-weight:850;cursor:pointer;border-radius:10px 10px 0 0}
+.menu button.active{background:rgba(255,255,255,.18);border-bottom:4px solid var(--azul-claro)}
+.container{width:1380px;max-width:calc(100% - 46px);margin:auto;padding:28px 0 44px}
+.page-title{margin-bottom:18px}
+.page-title h2{margin:0;color:var(--azul-escuro);font-size:28px}
+.page-title p{margin:7px 0 0;color:var(--muted)}
+.pbi-toolbar,.panel,.card,.info{
+  background:var(--glass-bg);backdrop-filter:blur(12px);
+  border:1px solid var(--borda);box-shadow:var(--shadow-soft)
+}
+.pbi-toolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  border-radius:16px;padding:15px 17px;margin-bottom:18px
+}
+.filter-group{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.filter-label{font-size:12px;text-transform:uppercase;letter-spacing:.7px;font-weight:850;color:var(--azul-escuro)}
+.filter-btn,select,.clear-btn{
+  border:0;border-radius:999px;padding:10px 16px;font-weight:850;cursor:pointer;
+  background:#e0f2fe;color:var(--azul-escuro);transition:.18s ease
+}
+.filter-btn:hover,.clear-btn:hover{transform:translateY(-2px);box-shadow:0 9px 18px rgba(0,64,119,.16)}
+.filter-btn.active,.clear-btn{background:var(--azul-principal);color:#fff}
+
+.multi-select{position:relative;min-width:180px}
+.multi-select-trigger{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  border:1px solid var(--borda);border-radius:999px;padding:10px 15px;
+  background:#fff;color:var(--azul-escuro);font-weight:850;cursor:pointer
+}
+.multi-select-menu{
+  display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:1000;
+  min-width:230px;max-height:300px;overflow:auto;padding:10px;
+  background:#fff;border:1px solid var(--borda);border-radius:16px;
+  box-shadow:0 18px 40px rgba(0,64,119,.22)
+}
+.multi-select.open .multi-select-menu{display:block}
+.multi-select-actions{
+  display:flex;gap:8px;padding:4px 4px 10px;border-bottom:1px solid var(--borda);margin-bottom:8px
+}
+.multi-select-actions button{
+  flex:1;border:0;border-radius:999px;padding:7px 9px;
+  background:#e0f2fe;color:var(--azul-escuro);font-size:11px;font-weight:850;cursor:pointer
+}
+.multi-option{
+  display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:10px;
+  color:#334155;font-size:13px;font-weight:750;cursor:pointer
+}
+.multi-option:hover{background:#eef6fc}
+.multi-option input{width:16px;height:16px;accent-color:var(--azul-principal)}
+body.dark-mode .multi-select-trigger,
+body.dark-mode .multi-select-menu{background:#10263c;color:#eaf4ff;border-color:#1f3852}
+body.dark-mode .multi-option{color:#dbeafe}
+body.dark-mode .multi-option:hover{background:#17324d}
+.selected-filter-summary{
+  width:100%;margin-top:8px;color:var(--muted);font-size:12px;font-weight:750
+}
+@media(max-width:720px){
+  .date-filter-group{width:100%}
+  .multi-select{width:100%}
+}
+
+select{border:1px solid var(--borda);background:#fff;min-width:190px}
+.info{
+  border-left:6px solid var(--azul-claro);border-radius:14px;padding:16px 18px;
+  color:#17324d;font-weight:700;line-height:1.55;margin-bottom:20px
+}
+.cards{display:grid;grid-template-columns:repeat(7,1fr);gap:15px;margin-bottom:22px}
+.card{
+  position:relative;overflow:hidden;border-radius:16px;padding:19px;min-height:138px;
+  background:linear-gradient(180deg,#fff 0%,#f8fcff 100%);
+  transition:transform .24s ease,box-shadow .24s ease,border-color .24s ease
+}
+.card:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--azul-escuro),var(--azul-claro))}
+.card:after{content:"";position:absolute;width:120px;height:120px;right:-55px;bottom:-68px;border-radius:50%;background:rgba(52,144,206,.10)}
+.card:hover{transform:translateY(-6px) scale(1.012);box-shadow:var(--shadow-strong);border-color:var(--azul-claro)}
+.card h3{position:relative;z-index:1;margin:0 0 12px;color:#52657d;font-size:12px;text-transform:uppercase;letter-spacing:.7px}
+.card .num{position:relative;z-index:1;font-size:31px;font-weight:850;color:var(--azul-principal);letter-spacing:-1px}
+.card .sub{position:relative;z-index:1;margin-top:8px;color:var(--muted);font-size:12px;font-weight:700;line-height:1.35}
+.delta.up{color:var(--verde)!important}.delta.down{color:var(--vermelho)!important}.delta.neutral{color:var(--laranja)!important}
+.grid-2{display:grid;grid-template-columns:1.7fr 1fr;gap:18px}
+#evolucao .panel:first-child{border-top:4px solid var(--azul-principal)}
+#evolucao .panel:last-child{border-top:4px solid var(--azul-claro)}
+.grid-2.equal{grid-template-columns:1fr 1fr}
+.panel{border-radius:16px;overflow:hidden;margin-bottom:22px;transition:.24s ease}
+.panel:hover{box-shadow:var(--shadow-strong)}
+.panel-title{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:14px 18px;color:#fff;font-weight:850;
+  background:linear-gradient(135deg,var(--azul-escuro),var(--azul-principal),var(--azul-claro))
+}
+.panel-title small{font-size:11px;color:#dbeafe;font-weight:700}
+.panel-body{padding:18px}
+.apex-chart-host{width:100%;height:335px;min-height:335px}
+.kpi-comparison{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+.compare-box{padding:16px;border:1px solid var(--borda);border-radius:14px;background:#f8fbff}
+.compare-box strong{display:block;color:var(--azul-escuro);font-size:13px;margin-bottom:6px}
+.compare-box span{font-size:26px;font-weight:850;color:var(--azul-principal)}
+.compare-box small{display:block;color:var(--muted);margin-top:6px;font-weight:700}
+table{width:100%;border-collapse:collapse}
+th{background:#eef6fc;color:var(--azul-escuro);text-align:left;padding:12px;font-size:12px;text-transform:uppercase;border-bottom:1px solid var(--borda)}
+td{padding:12px;border-bottom:1px solid #edf4fa;font-size:14px}
+tbody tr{transition:.16s ease}tbody tr:hover{background:#f8fbff;transform:scale(1.002)}
+.badge{display:inline-flex;padding:6px 11px;border-radius:999px;background:#e0f2fe;color:var(--azul-escuro);font-weight:850;font-size:12px}
+.trend-up{color:var(--verde);font-weight:850}.trend-down{color:var(--vermelho);font-weight:850}.trend-flat{color:var(--laranja);font-weight:850}
+.executive-reading{
+      margin-top:14px;padding:15px 17px;border-radius:14px;
+      background:#eef6fc;border:1px solid var(--borda);
+      border-left:5px solid var(--azul-claro);color:#17324d;
+      font-size:13px;font-weight:700;line-height:1.55
+    }
+    body.dark-mode .executive-reading{background:#10263c;color:#dbeafe}
+    .insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.insight-card{border:1px solid var(--borda);border-radius:14px;padding:16px;background:#f8fbff}
+.insight-card h4{margin:0 0 7px;color:var(--azul-escuro);font-size:13px}
+.insight-card p{margin:0;color:#334155;line-height:1.5;font-size:13px;font-weight:650}
+.footer{text-align:center;padding:24px;color:var(--muted);font-size:13px}
+.theme-toggle{
+  position:fixed;right:22px;top:70px;z-index:9999;width:48px;height:48px;border:0;border-radius:16px;
+  background:rgba(255,255,255,.94);color:var(--azul-escuro);font-size:21px;cursor:pointer;
+  box-shadow:0 12px 30px rgba(0,64,119,.24);transition:.2s ease
+}
+.theme-toggle:hover{transform:translateY(-3px) rotate(-5deg)}
+body.dark-mode{
+  --fundo:#07111f;--texto:#eaf4ff;--muted:#9fb4ca;--borda:#1f3852;--glass-bg:rgba(15,29,45,.86);
+  background:radial-gradient(circle at top left,rgba(52,144,206,.20),transparent 30%),#07111f
+}
+body.dark-mode .card,body.dark-mode .panel,body.dark-mode .pbi-toolbar,body.dark-mode .info{
+  background:linear-gradient(180deg,rgba(15,29,45,.94),rgba(10,22,35,.94));color:var(--texto)
+}
+body.dark-mode select,body.dark-mode .compare-box,body.dark-mode .insight-card{background:#10263c;color:#eaf4ff;border-color:#1f3852}
+body.dark-mode th{background:#10263c}body.dark-mode tbody tr:hover{background:#10263c}
+body.dark-mode .theme-toggle{background:#10263c;color:#dbeafe}
+body.dark-mode .info,body.dark-mode .insight-card p{color:#dbeafe}
+.pulse{animation:pulse 1.8s infinite}@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(52,144,206,.22)}50%{box-shadow:0 0 0 8px rgba(52,144,206,0)}}
+@media(max-width:1100px){.cards{grid-template-columns:repeat(3,1fr)}.grid-2,.grid-2.equal{grid-template-columns:1fr}.header{grid-template-columns:1fr;text-align:center}.logo{margin:auto}.update{text-align:center;margin-top:12px}}
+@media(max-width:720px){.cards,.insight-grid{grid-template-columns:1fr}.container{max-width:calc(100% - 24px)}.topbar{padding:12px 16px 0}.title h1{font-size:25px}.menu{overflow-x:auto;justify-content:flex-start}.theme-toggle{top:auto;bottom:20px}.kpi-comparison{grid-template-columns:1fr}}
+
+/* ===== CORREÇÃO DE CAMADAS DOS FILTROS ===== */
+.pbi-toolbar{
+  position:relative;
+  z-index:3000;
+  overflow:visible !important;
+}
+.filter-group,
+.date-filter-group{
+  position:relative;
+  z-index:3100;
+  overflow:visible !important;
+}
+.multi-select{
+  position:relative;
+  z-index:3200;
+}
+.multi-select.open{
+  z-index:9999;
+}
+.multi-select-menu{
+  z-index:10000 !important;
+}
+.cards,
+.panel,
+.grid-2,
+section{
+  position:relative;
+  z-index:1;
+}
+
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Alternar tema">🌙</button>
+<header class="topbar">
+  <div class="header">
+    <div><img class="logo" src="data:image/png;base64,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" alt="Detran.SP"></div>
+    <div class="title">
+      <h1>Painel Comparativo de Bloqueios</h1>
+      <p>Motivos 2, E e F • Comparativo por UF • Evolução, altas e quedas mensais</p>
+    </div>
+    <div class="update">Base analisada até:<br><strong>28/07/2026</strong></div>
+  </div>
+  <nav class="menu">
+    <button class="active">Visão Executiva</button>
+    <button onclick="document.getElementById('evolucao').scrollIntoView()">Evolução Mensal</button>
+    <button onclick="document.getElementById('ranking').scrollIntoView()">Altas e Quedas</button>
+    <button onclick="document.getElementById('tendencias').scrollIntoView()">Altas e Quedas</button>
+  </nav>
+</header>
+
+<main class="container">
+  <div class="page-title">
+    <h2>Visão Geral dos Bloqueios</h2>
+    <p>O painel inicia com os dados de 2026. Selecione outros anos e meses para ampliar ou alterar a análise.</p>
+  </div>
+
+  <div class="info">
+    Base recalculada diretamente da nova planilha: <strong>468.936 bloqueios</strong>, sendo <strong>462.226</strong> do motivo 2, <strong>6.699</strong> do motivo E e <strong>11</strong> do motivo F. A coluna <strong>uf_bloqueio</strong> possui dados de diferentes UFs; o comparativo principal permanece entre <strong>SP (449.162)</strong> e <strong>JU (5.321)</strong>.
+  </div>
+
+  <div class="pbi-toolbar">
+    <div class="filter-group">
+      <span class="filter-label">Motivo do bloqueio</span>
+      <button class="filter-btn active" data-motivo="2">Motivo 2</button>
+      <button class="filter-btn" data-motivo="E">Motivo E</button>
+      <button class="filter-btn" data-motivo="F">Motivo F</button>
+    </div>
+    <div class="filter-group date-filter-group">
+      <span class="filter-label">Ano</span>
+      <div class="multi-select" id="anoMulti">
+        <button type="button" class="multi-select-trigger" onclick="toggleMultiSelect('anoMulti')">
+          <span id="anoResumo">2026</span><b>▾</b>
+        </button>
+        <div class="multi-select-menu" id="anoMenu"></div>
+      </div>
+
+      <span class="filter-label">Mês</span>
+      <div class="multi-select" id="mesMulti">
+        <button type="button" class="multi-select-trigger" onclick="toggleMultiSelect('mesMulti')">
+          <span id="mesResumo">Todos os meses</span><b>▾</b>
+        </button>
+        <div class="multi-select-menu" id="mesMenu"></div>
+      </div>
+
+      <button class="clear-btn" id="limparFiltros">Limpar filtros</button>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h3>Total geral da base</h3><div class="num" id="kGeral">-</div><div class="sub">Todos os motivos da planilha</div></div>
+    <div class="card"><h3>Total do motivo filtrado</h3><div class="num" id="kTotal">-</div><div class="sub">Motivo e período selecionados</div></div><div class="card"><h3>Bloqueios em SP</h3><div class="num" id="kSP">-</div><div class="sub" id="subSP">Participação no total</div></div>
+    <div class="card"><h3>Bloqueios em JU</h3><div class="num" id="kJU">-</div><div class="sub" id="subJU">Participação no total</div></div>
+    <div class="card"><h3>Diferença SP × JU</h3><div class="num" id="kDif">-</div><div class="sub">Diferença absoluta no período</div></div>
+    <div class="card pulse"><h3>Variação mensal SP</h3><div class="num delta" id="kVarSP">-</div><div class="sub">Último mês contra o anterior</div></div>
+    <div class="card pulse"><h3>Variação mensal JU</h3><div class="num delta" id="kVarJU">-</div><div class="sub">Último mês contra o anterior</div></div>
+  </div>
+
+  <section id="evolucao" class="grid-2">
+    <div class="panel">
+      <div class="panel-title"><span>Movimento mensal dos bloqueios</span><small>SP em colunas e JU em linha para destacar escala e tendência</small></div>
+      <div class="panel-body"><div id="chartEvolucao" class="apex-chart-host"></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span>Distribuição territorial</span><small>Comparação direta por volume e participação percentual</small></div>
+      <div class="panel-body">
+        <div id="chartParticipacao" class="apex-chart-host"></div>
+        <div class="kpi-comparison">
+          <div class="compare-box"><strong>Concentração em SP</strong><span id="compSP">-</span><small id="compSPText">do volume analisado</small></div>
+          <div class="compare-box"><strong>Concentração em JU</strong><span id="razaoSPJU">-</span><small>do volume analisado</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+<section id="ranking" class="grid-2 equal">
+  <div class="panel">
+    <div class="panel-title"><span>Altas e quedas mensais — SP</span><small>Rótulos trimestrais; todos os meses permanecem no gráfico</small></div>
+    <div class="panel-body">
+      <div id="chartVariacaoSP" class="apex-chart-host"></div>
+      <div class="executive-reading" id="leituraSP"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><span>Altas e quedas mensais — JU</span><small>Rótulos trimestrais; todos os meses permanecem no gráfico</small></div>
+    <div class="panel-body">
+      <div id="chartVariacaoJU" class="apex-chart-host"></div>
+      <div class="executive-reading" id="leituraJU"></div>
+    </div>
+  </div>
+</section>
+
+  <section id="tendencias" class="panel">
+    <div class="panel-title">
+      <span>Comparativo entre os meses selecionados</span>
+      <small id="subtituloComparativo">Comparação entre os dois últimos meses do período selecionado</small>
+    </div>
+    <div class="panel-body">
+      <table>
+        <thead>
+<tr>
+<th>UF</th>
+<th id="colMesAnterior">Penúltimo mês</th>
+<th id="colUltimoMes">Último mês</th>
+<th>Diferença</th>
+<th>Variação</th>
+<th>Tendência</th>
+</tr>
+</thead>
+        <tbody id="tabelaTendencia"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title"><span>Leitura Executiva</span><small>Resumo automático do filtro selecionado</small></div>
+    <div class="panel-body"><div class="insight-grid" id="insights"></div></div>
+  </section>
+</main>
+
+<div class="footer">DETRAN-SP • Painel analítico de bloqueios • 468.936 registros recalculados da nova planilha</div>
+
+<script>
+const D={"months":["2022-01","2022-02","2022-03","2022-04","2022-05","2022-06","2022-07","2022-08","2022-09","2022-10","2022-11","2022-12","2023-01","2023-02","2023-03","2023-04","2023-05","2023-06","2023-07","2023-08","2023-09","2023-10","2023-11","2023-12","2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07"],"series":{"2":{"":[0,0,0,0,0,174,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AC":[0,1,2,2,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1,1,0,2,2,0,1,0,0,1,0,1,1,0,0,0,0,1,2,0,0,0,0,2,0,1,0,1,0,1,0,0,0,1,0],"AL":[1,1,0,1,0,1,1,0,1,0,0,0,1,2,0,0,2,0,1,0,1,0,0,0,0,0,0,0,0,2,1,1,1,0,2,0,0,0,0,3,0,0,0,4,1,2,1,5,1,1,1,0,1,2,3],"AM":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,2,0,1,1,0,0],"AP":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1,0],"BA":[0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,5,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],"CE":[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"DF":[0,0,0,0,0,0,0,1,1,4,0,1,0,0,0,0,0,0,0,0,0,0,1,3,0,0,0,3,1,0,0,5,3,1,0,7,8,31,3,13,13,38,56,27,47,0,0,0,0,0,0,0,0,0,0],"ES":[3,1,0,1,1,0,0,3,0,0,1,0,0,0,2,0,0,1,0,0,1,0,8,1,0,5,0,0,5,3,0,1,4,0,0,0,0,2,1,0,1,0,2,0,1,3,1,4,3,3,47,8,0,0,0],"GO":[0,2,0,0,0,2,0,0,0,0,5,0,2,3,4,8,6,2,2,16,6,3,4,2,1,0,1,0,0,0,1,1,1,2,2,0,1,8,3,9,0,4,3,0,0,5,1,0,1,0,0,1,3,2,2],"JU":[0,0,0,0,0,0,0,0,2,0,3,0,2,2,8,9,30,19,35,31,36,29,27,22,32,80,79,103,82,79,103,124,157,130,131,69,102,181,124,129,177,182,149,233,266,213,195,179,142,167,311,162,262,314,235],"MG":[2,3,3,0,2,2,2,2,4,3,2,3,2,5,4,8,9,16,11,2,6,7,4,4,9,1,3,4,0,1,4,0,3,4,0,1,0,3,1,1,2,1,7,3,16,6,7,3,3,2,8,8,4,4,6],"MS":[0,3,61,1,26,0,6,8,2,13,0,25,0,0,11,2,0,16,2,2,22,12,15,4,4,0,16,0,14,23,0,6,8,0,7,4,12,11,6,23,6,8,5,7,11,17,21,6,22,3,15,68,26,26,4],"MT":[0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,1,0,0,0,3,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1,1,0,0,2,1,1,0,1,1,2,4,1,4],"OL":[7,10,13,11,12,24,898,24,39,28,32,12,12,20,903,10,42,21,47,915,893,23,14,15,15,6,908,23,1772,899,36,897,13,11,16,11,1,12,1,2,5,7,0,1,7,3,2,4,11,9,11,14,6,9,884],"PA":[0,0,1,1,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PB":[0,1,0,0,2,6,2,1,1,0,0,0,0,0,1,1,0,0,0,2,0,4,0,4,0,3,1,0,0,0,0,7,4,1,2,4,1,2,3,11,10,0,1,4,0,1,4,0,1,0,0,1,4,0,0],"PE":[7,0,1,1,3,2,4,2,1,2,1,0,0,1,1,0,0,0,0,1,0,3,1,2,3,3,3,3,0,0,0,1,1,2,4,4,1,2,8,13,1,0,6,1,2,4,2,1,5,2,5,0,3,1,3],"PI":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],"PR":[3,1,0,16,101,18,2,5,14,45,10,28,25,25,31,13,22,7,2,1,21,13,21,6,6,5,5,9,7,5,2,9,8,7,6,9,5,37,3,17,14,12,7,6,7,2,6,10,7,6,10,3,10,10,3],"RJ":[0,0,2,4,0,0,0,3,0,2,0,2,1,2,2,2,18,11,2,9,5,12,11,2,29,9,1,1,4,17,7,7,12,8,13,8,76,32,9,7,16,11,13,24,11,19,31,15,13,10,16,13,17,18,6],"RN":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,2,1,1,1,4,2,0,0,0,1,0,4,3,1,0],"RO":[2,0,0,0,0,1,2,0,0,1,1,1,1,2,7,0,1,1,1,0,1,7,2,0,0,1,2,0,0,0,1,0,0,4,0,0,0,0,2,876,0,0,0,0,1,0,0,2,0,0,0,2,0,0,0],"RR":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,1,0,0,0,1,0,0,1,0],"RS":[1,0,1,0,1,1,0,3,0,4,7,8,6,5,2,3,4,0,1,2,3,2,3,0,6,3,1,13,0,6,1,2,0,10,3,0,0,0,0,0,0,0,0,2,4,3,1,2,7,4,0,0,1,0,0],"SC":[12,11,4,9,23,15,15,36,14,7,20,16,7,8,8,7,5,15,8,3,8,9,14,11,8,25,8,4,13,10,10,5,7,11,6,1,0,1,2,3,11,2,4,6,7,8,16,9,0,17,4,10,12,7,8],"SE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,3,5,3,3,3,1,2,0,1,0,0,0,1,3,1,1,2,4,1,4,0,2,0,1,3,0,0,0,0,0],"SP":[3351,196,188,163,79043,2918,390,360,260,944,250,223,2783,20029,4071,213,275,322,585,762,4886,10651,8991,356,383,388,719,512,128,124,182,257,663,579,788,666,8922,55018,25884,18151,47204,50541,24934,7647,2162,6459,7688,6801,6786,1938,3149,2170,2135,7626,9888],"TO":[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},"E":{"":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AC":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],"AL":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AM":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AP":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"BA":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"CE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"DF":[0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],"ES":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"GO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"JU":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,1,1,1,0,0,0,3,6,4,5,13,11,20,12,4,4,4,13,8,11,5,7,3,9,8,4,6,3,4],"MG":[0,0,0,0,0,0,0,0,1,2,0,0,1,0,1,3,2,0,1,1,1,0,2,1,0,1,3,0,0,0,1,0,0,1,0,1,0,0,1,1,0,1,0,0,1,1,0,0,2,2,2,0,0,0,0],"MS":[0,1,1,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,1,2,0,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],"MT":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"OL":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PA":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PB":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,2,0,0,1,1,0,0,0,0,0],"PI":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PR":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RJ":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RN":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],"RR":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RS":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"SC":[0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],"SE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"SP":[65,133,172,110,145,173,112,163,158,162,173,180,103,120,128,155,140,124,86,223,154,193,165,105,82,70,74,58,59,79,90,127,73,88,71,80,78,73,94,94,101,121,160,129,104,154,124,83,104,86,107,122,127,96,101],"TO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0]},"F":{"":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AC":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AL":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AM":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"AP":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"BA":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"CE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"DF":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"ES":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"GO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"JU":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"MG":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"MS":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"MT":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"OL":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PA":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PB":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PI":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"PR":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RJ":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RN":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RR":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"RS":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"SC":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"SE":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"SP":[0,0,0,0,0,1,2,0,1,0,0,0,0,0,2,0,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"TO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}},"motivoTotals":{"2":462226,"E":6699,"F":11},"grandTotal":468936,"ufTotals":{"SP":449162,"OL":9621,"JU":5321,"RO":928,"PR":683,"MS":622,"RJ":563,"SC":526,"DF":274,"MG":255,"":174,"RS":126,"PE":125,"GO":119,"ES":117,"PB":90,"SE":47,"AL":45,"RN":29,"MT":28,"AC":27,"AP":10,"BA":9,"RR":7,"AM":7,"CE":7,"PA":6,"TO":4,"PI":4}};
+let motivo="2";
+let charts={};
+const fmt=n=>new Intl.NumberFormat("pt-BR").format(n||0);
+const pct=(a,b)=>b?((a-b)/b*100):null;
+const pctTxt=v=>v===null?"—":`${v>=0?"+":""}${v.toFixed(1).replace(".",",")}%`;
+const mesTxt=s=>{const [a,m]=s.split("-");return `${m}/${a}`};
+
+
+const NOMES_MESES={
+  "01":"Janeiro","02":"Fevereiro","03":"Março","04":"Abril",
+  "05":"Maio","06":"Junho","07":"Julho","08":"Agosto",
+  "09":"Setembro","10":"Outubro","11":"Novembro","12":"Dezembro"
+};
+let anosSelecionados=new Set();
+let mesesSelecionados=new Set();
+
+function indicesSelecionados(){
+  const indices=[];
+  D.months.forEach((periodo,i)=>{
+    const [ano,mes]=periodo.split("-");
+    const anoOk=anosSelecionados.size===0 || anosSelecionados.has(ano);
+    const mesOk=mesesSelecionados.size===0 || mesesSelecionados.has(mes);
+    if(anoOk && mesOk) indices.push(i);
+  });
+  return indices;
+}
+function recorte(arr){
+  const indices=indicesSelecionados();
+  return [
+    indices.map(i=>D.months[i]),
+    indices.map(i=>arr[i]||0)
+  ];
+}
+function toggleMultiSelect(id){
+  const alvo=document.getElementById(id);
+  document.querySelectorAll(".multi-select").forEach(el=>{
+    if(el!==alvo) el.classList.remove("open");
+  });
+  alvo.classList.toggle("open");
+}
+function selecionarTodos(tipo){
+  const menu=tipo==="ano"?document.getElementById("anoMenu"):document.getElementById("mesMenu");
+  menu.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=true);
+  atualizarSelecaoMultipla(tipo);
+}
+function limparSelecao(tipo){
+  const menu=tipo==="ano"?document.getElementById("anoMenu"):document.getElementById("mesMenu");
+  menu.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  atualizarSelecaoMultipla(tipo);
+}
+function atualizarSelecaoMultipla(tipo){
+  if(tipo==="ano"){
+    anosSelecionados=new Set(
+      [...document.querySelectorAll('#anoMenu input[type="checkbox"]:checked')].map(x=>x.value)
+    );
+  }else{
+    mesesSelecionados=new Set(
+      [...document.querySelectorAll('#mesMenu input[type="checkbox"]:checked')].map(x=>x.value)
+    );
+  }
+  atualizarResumoFiltros();
+  render();
+}
+function atualizarResumoFiltros(){
+  const anos=[...anosSelecionados].sort();
+  const meses=[...mesesSelecionados].sort();
+
+  document.getElementById("anoResumo").textContent=
+    anos.length===0?"Todos os anos":
+    anos.length<=2?anos.join(", "):`${anos.length} anos selecionados`;
+
+  document.getElementById("mesResumo").textContent=
+    meses.length===0?"Todos os meses":
+    meses.length<=2?meses.map(m=>NOMES_MESES[m]).join(", "):`${meses.length} meses selecionados`;
+}
+function montarFiltrosData(){
+  const anos=[...new Set(D.months.map(x=>x.split("-")[0]))].sort();
+  const meses=[...new Set(D.months.map(x=>x.split("-")[1]))].sort();
+
+  document.getElementById("anoMenu").innerHTML=`
+    <div class="multi-select-actions">
+      <button type="button" onclick="selecionarTodos('ano')">Selecionar todos</button>
+      <button type="button" onclick="limparSelecao('ano')">Limpar</button>
+    </div>
+    ${anos.map(ano=>`
+      <label class="multi-option">
+        <input type="checkbox" value="${ano}" onchange="atualizarSelecaoMultipla('ano')">
+        <span>${ano}</span>
+      </label>`).join("")}
+  `;
+
+  document.getElementById("mesMenu").innerHTML=`
+    <div class="multi-select-actions">
+      <button type="button" onclick="selecionarTodos('mes')">Selecionar todos</button>
+      <button type="button" onclick="limparSelecao('mes')">Limpar</button>
+    </div>
+    ${meses.map(mes=>`
+      <label class="multi-option">
+        <input type="checkbox" value="${mes}" onchange="atualizarSelecaoMultipla('mes')">
+        <span>${NOMES_MESES[mes]}</span>
+      </label>`).join("")}
+  `;
+  atualizarResumoFiltros();
+}
+
+document.addEventListener("click",event=>{
+  if(!event.target.closest(".multi-select")){
+    document.querySelectorAll(".multi-select").forEach(el=>el.classList.remove("open"));
+  }
+});
+
+function serie(uf){
+  const base=(D.series[motivo]&&D.series[motivo][uf])||D.months.map(()=>0);
+  return recorte(base);
+}
+function somaPeriodo(uf){
+  const [,a]=serie(uf);return a.reduce((x,y)=>x+y,0);
+}
+function totalPeriodo(){
+  const ufs=Object.keys(D.series[motivo]||{});
+  return ufs.reduce((acc,uf)=>acc+somaPeriodo(uf),0);
+}
+function classeDelta(v){
+  if(v===null||v===0)return "neutral";
+  return v>0?"up":"down";
+}
+function tendencia(v){
+  if(v===null)return ["Sem base","trend-flat"];
+  if(v>0)return ["Alta","trend-up"];
+  if(v<0)return ["Queda","trend-down"];
+  return ["Estável","trend-flat"];
+}
+function destruir(){
+  Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});
+  charts={};
+}
+
+
+function labelTrimestral(value, timestamp, opts){
+  const indice = opts && typeof opts.i === "number" ? opts.i : 0;
+  return indice % 3 === 0 ? value : "";
+}
+
+function variacoes(arr){
+  return arr.map((valor,i)=>{
+    if(i===0) return null;
+    const anterior=arr[i-1];
+    if(!anterior) return valor===0?0:null;
+    return ((valor-anterior)/anterior)*100;
+  });
+}
+function resumoVariacao(nome, meses, valores, variacoesMes){
+  const validas=variacoesMes.map((v,i)=>({v,i})).filter(x=>x.v!==null && Number.isFinite(x.v));
+  if(!validas.length) return `<strong>${nome}:</strong> não há meses suficientes para calcular variação.`;
+  const maiorAlta=validas.reduce((a,b)=>b.v>a.v?b:a);
+  const maiorQueda=validas.reduce((a,b)=>b.v<a.v?b:a);
+  const atual=validas.at(-1);
+  const tendenciaAtual=atual.v>0?"alta":atual.v<0?"queda":"estabilidade";
+  return `<strong>${nome}:</strong> o último movimento foi de <strong>${tendenciaAtual}</strong> em ${mesTxt(meses[atual.i])}, com <strong>${pctTxt(atual.v)}</strong>. 
+  A maior alta do período ocorreu em <strong>${mesTxt(meses[maiorAlta.i])}</strong> (${pctTxt(maiorAlta.v)}) e a maior queda em <strong>${mesTxt(meses[maiorQueda.i])}</strong> (${pctTxt(maiorQueda.v)}).`;
+}
+function render(){
+  const total=totalPeriodo(),sp=somaPeriodo("SP"),ju=somaPeriodo("JU"),demais=Math.max(0,total-sp-ju);
+  const [meses,spSerie]=serie("SP"),[,juSerie]=serie("JU");
+  const spAtual=spSerie.at(-1)||0,spAnt=spSerie.at(-2)||0,juAtual=juSerie.at(-1)||0,juAnt=juSerie.at(-2)||0;
+  const varSP=pct(spAtual,spAnt),varJU=pct(juAtual,juAnt);
+  const variacaoSP=variacoes(spSerie),variacaoJU=variacoes(juSerie);
+
+  kGeral.textContent=fmt(D.grandTotal);
+  kTotal.textContent=fmt(total);kSP.textContent=fmt(sp);kJU.textContent=fmt(ju);kDif.textContent=fmt(Math.abs(sp-ju));
+  subSP.textContent=`${total?((sp/total)*100).toFixed(1).replace(".",","):0}% do total filtrado`;
+  subJU.textContent=`${total?((ju/total)*100).toFixed(1).replace(".",","):0}% do total filtrado`;
+  kVarSP.textContent=pctTxt(varSP);kVarSP.className=`num delta ${classeDelta(varSP)}`;
+  kVarJU.textContent=pctTxt(varJU);kVarJU.className=`num delta ${classeDelta(varJU)}`;
+  compSP.textContent=`${total?((sp/total)*100).toFixed(1).replace(".",","):0}%`;
+  razaoSPJU.textContent=total?`${((ju/total)*100).toFixed(1).replace(".",",")}%`:"—";
+
+  destruir();
+  const dark=document.body.classList.contains("dark-mode");
+  const fore=dark?"#dbeafe":"#475569";
+  const grid=dark?"#1f3852":"#e5eef6";
+
+  charts.evolucao=new ApexCharts(document.querySelector("#chartEvolucao"),{
+    chart:{type:"line",height:335,toolbar:{show:false},stacked:false,animations:{enabled:true,easing:"easeinout",speed:700}},
+    series:[
+      {name:"SP",type:"column",data:spSerie},
+      {name:"JU",type:"line",data:juSerie}
+    ],
+    xaxis:{
+      categories:meses.map(mesTxt),
+      tickPlacement:"on",
+      labels:{
+        rotate:0,rotateAlways:false,hideOverlappingLabels:true,trim:false,
+        minHeight:34,maxHeight:48,formatter:labelTrimestral,
+        style:{colors:fore,fontSize:"11px"}
+      }
+    },
+    yaxis:[
+      {seriesName:"SP",labels:{formatter:fmt,style:{colors:fore}},title:{text:"Volume SP",style:{color:fore}}},
+      {seriesName:"JU",opposite:true,labels:{formatter:fmt,style:{colors:fore}},title:{text:"Volume JU",style:{color:fore}}}
+    ],
+    stroke:{width:[0,4],curve:"smooth"},
+    plotOptions:{bar:{columnWidth:"56%",borderRadius:5}},
+    fill:{opacity:[.88,1]},
+    dataLabels:{enabled:false},markers:{size:[0,4],strokeWidth:2},grid:{borderColor:grid},
+    legend:{position:"top",horizontalAlign:"right",labels:{colors:fore}},
+    tooltip:{shared:true,intersect:false,x:{formatter:value=>value},y:{formatter:fmt}}
+  });charts.evolucao.render();
+
+  const participacoes=[sp,ju,demais].map(v=>total?Number(((v/total)*100).toFixed(2)):0);
+  charts.participacao=new ApexCharts(document.querySelector("#chartParticipacao"),{
+    chart:{type:"bar",height:335,toolbar:{show:false},animations:{enabled:true,easing:"easeinout",speed:650}},
+    series:[{name:"Volume",data:[sp,ju,demais]}],
+    xaxis:{
+      categories:["SP","JU","Demais UFs"],
+      labels:{formatter:fmt,style:{colors:fore}},
+      title:{text:"Quantidade de bloqueios",style:{color:fore}}
+    },
+    yaxis:{labels:{style:{colors:fore,fontSize:"13px",fontWeight:700}}},
+    plotOptions:{bar:{horizontal:true,borderRadius:7,barHeight:"48%",distributed:true,dataLabels:{position:"top"}}},
+    dataLabels:{
+      enabled:true,
+      textAnchor:"start",
+      offsetX:8,
+      formatter:(v,opts)=>`${fmt(v)}  •  ${participacoes[opts.dataPointIndex].toFixed(1).replace(".",",")}%`,
+      style:{fontSize:"12px",fontWeight:800,colors:[fore]}
+    },
+    legend:{show:false},grid:{borderColor:grid},
+    tooltip:{y:{formatter:(v,opts)=>`${fmt(v)} bloqueios (${participacoes[opts.dataPointIndex].toFixed(1).replace(".",",")}%)`}}
+  });charts.participacao.render();
+
+  charts.variacaoSP=new ApexCharts(document.querySelector("#chartVariacaoSP"),{
+    chart:{type:"bar",height:335,toolbar:{show:false}},
+    series:[{name:"Variação SP",data:variacaoSP.map(v=>v===null?0:Number(v.toFixed(2)))}],
+    xaxis:{
+      categories:meses.map(mesTxt),
+      tickPlacement:"on",
+      labels:{
+        rotate:0,
+        rotateAlways:false,
+        hideOverlappingLabels:true,
+        trim:false,
+        minHeight:34,
+        maxHeight:48,
+        formatter:labelTrimestral,
+        style:{colors:fore,fontSize:"11px"}
+      }
+    },
+    yaxis:{labels:{formatter:v=>`${v.toFixed(0)}%`,style:{colors:fore}}},
+    plotOptions:{bar:{borderRadius:4,columnWidth:"70%",colors:{ranges:[
+      {from:-999999,to:-0.0001,color:"#c73d4d"},
+      {from:0,to:999999,color:"#16865a"}
+    ]}}},
+    dataLabels:{enabled:false},grid:{borderColor:grid},
+    tooltip:{x:{formatter:value=>value},y:{formatter:v=>`${v>=0?"+":""}${v.toFixed(1).replace(".",",")}%`}}
+  });charts.variacaoSP.render();
+
+  charts.variacaoJU=new ApexCharts(document.querySelector("#chartVariacaoJU"),{
+    chart:{type:"bar",height:335,toolbar:{show:false}},
+    series:[{name:"Variação JU",data:variacaoJU.map(v=>v===null?0:Number(v.toFixed(2)))}],
+    xaxis:{
+      categories:meses.map(mesTxt),
+      tickPlacement:"on",
+      labels:{
+        rotate:0,
+        rotateAlways:false,
+        hideOverlappingLabels:true,
+        trim:false,
+        minHeight:34,
+        maxHeight:48,
+        formatter:labelTrimestral,
+        style:{colors:fore,fontSize:"11px"}
+      }
+    },
+    yaxis:{labels:{formatter:v=>`${v.toFixed(0)}%`,style:{colors:fore}}},
+    plotOptions:{bar:{borderRadius:4,columnWidth:"70%",colors:{ranges:[
+      {from:-999999,to:-0.0001,color:"#c73d4d"},
+      {from:0,to:999999,color:"#16865a"}
+    ]}}},
+    dataLabels:{enabled:false},grid:{borderColor:grid},
+    tooltip:{x:{formatter:value=>value},y:{formatter:v=>`${v>=0?"+":""}${v.toFixed(1).replace(".",",")}%`}}
+  });charts.variacaoJU.render();
+
+  leituraSP.innerHTML=resumoVariacao("SP",meses,spSerie,variacaoSP);
+  leituraJU.innerHTML=resumoVariacao("JU",meses,juSerie,variacaoJU);
+
+  const periodoAnterior=meses.at(-2) || null;
+  const periodoAtual=meses.at(-1) || null;
+
+  function nomePeriodo(periodo, incluirAno=false){
+    if(!periodo) return "—";
+    const [ano,mes]=periodo.split("-");
+    return incluirAno ? `${NOMES_MESES[mes]}/${ano}` : NOMES_MESES[mes];
+  }
+
+  if(periodoAnterior && periodoAtual){
+    const anosDiferentes=periodoAnterior.split("-")[0]!==periodoAtual.split("-")[0];
+    const nomeAnterior=nomePeriodo(periodoAnterior,anosDiferentes);
+    const nomeAtual=nomePeriodo(periodoAtual,anosDiferentes);
+
+    document.getElementById("colMesAnterior").textContent=nomeAnterior;
+    document.getElementById("colUltimoMes").textContent=nomeAtual;
+    document.getElementById("subtituloComparativo").textContent=`Comparação entre ${nomeAnterior} e ${nomeAtual}`;
+  }else{
+    document.getElementById("colMesAnterior").textContent="Mês anterior";
+    document.getElementById("colUltimoMes").textContent=periodoAtual?nomePeriodo(periodoAtual):"Mês atual";
+    document.getElementById("subtituloComparativo").textContent="Selecione pelo menos dois meses para realizar a comparação";
+  }
+
+  const linhas=[["SP",spAnt,spAtual,varSP],["JU",juAnt,juAtual,varJU]];
+  tabelaTendencia.innerHTML=linhas.map(([uf,ant,atual,v])=>{
+    const [txt,cl]=tendencia(v);
+    return `<tr><td><span class="badge">${uf}</span></td><td>${fmt(ant)}</td><td>${fmt(atual)}</td><td>${fmt(atual-ant)}</td><td class="${cl}">${pctTxt(v)}</td><td class="${cl}">${txt}</td></tr>`;
+  }).join("");
+
+  const lider=sp>=ju?"SP":"JU";
+  const maiorVar=(Math.abs(varSP||0)>=Math.abs(varJU||0))?["SP",varSP]:["JU",varJU];
+  insights.innerHTML=`
+    <div class="insight-card"><h4>Volume da base</h4><p>A planilha possui <strong>${fmt(D.grandTotal)}</strong> registros. O motivo ${motivo} representa <strong>${fmt(total)}</strong> no recorte selecionado.</p></div>
+    <div class="insight-card"><h4>Concentração</h4><p><strong>${lider}</strong> concentra o maior volume entre SP e JU, com ${fmt(Math.max(sp,ju))} registros.</p></div>
+    <div class="insight-card"><h4>Movimento mais intenso</h4><p><strong>${maiorVar[0]}</strong> apresentou a maior oscilação no último mês: ${pctTxt(maiorVar[1])}.</p></div>`;
+}
+document.querySelectorAll(".filter-btn").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll(".filter-btn").forEach(x=>x.classList.remove("active"));
+  btn.classList.add("active");motivo=btn.dataset.motivo;render();
+}));
+limparFiltros.addEventListener("click",()=>{
+  motivo="2";
+  anosSelecionados=new Set(["2026"]);
+  mesesSelecionados.clear();
+
+  document.querySelectorAll('#anoMenu input[type="checkbox"], #mesMenu input[type="checkbox"]').forEach(x=>x.checked=false);
+  const ano2026=document.querySelector('#anoMenu input[value="2026"]');
+  if(ano2026) ano2026.checked=true;
+
+  document.querySelectorAll(".filter-btn").forEach(x=>x.classList.toggle("active",x.dataset.motivo==="2"));
+  atualizarResumoFiltros();
+  render();
+});
+themeToggle.addEventListener("click",()=>{
+  document.body.classList.toggle("dark-mode");
+  themeToggle.textContent=document.body.classList.contains("dark-mode")?"☀️":"🌙";
+  render();
+});
+montarFiltrosData();
+
+// Exibição inicial do painel: ano de 2026 e todos os meses.
+const anoPadrao = document.querySelector('#anoMenu input[value="2026"]');
+if (anoPadrao) {
+  anoPadrao.checked = true;
+  anosSelecionados = new Set(["2026"]);
+}
+mesesSelecionados.clear();
+atualizarResumoFiltros();
+render();
+</script>
+</body>
+</html>
