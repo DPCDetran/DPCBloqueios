@@ -205,6 +205,149 @@ section{
   z-index:1;
 }
 
+
+/* ===== HEADER ULTRAFINO — IGUAL AO HTML DE REFERÊNCIA ===== */
+.topbar { padding: 2px 28px 0 !important; }
+.header {
+    grid-template-columns: 245px minmax(0,1fr) 245px !important;
+    min-height: 54px !important;
+    height: 54px !important;
+    align-items: center !important;
+}
+.header > div:first-child {
+    height: 54px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+}
+.logo {
+    width: 198px !important;
+    max-height: 50px !important;
+    object-fit: contain !important;
+    margin: 2px 0 0 0 !important;
+    transform:none !important;
+}
+.title h1 { font-size: 25px !important; line-height:1 !important; }
+.title p { margin:2px 0 0 !important; font-size:11px !important; line-height:1.05 !important; }
+.update { font-size:10px !important; line-height:1.1 !important; }
+.menu { margin-top: 1px !important; gap:10px !important; }
+.menu button { padding: 7px 24px !important; line-height:1.1 !important; }
+.theme-toggle { top:18px !important; width:38px !important; height:38px !important; font-size:16px !important; }
+@media (max-width:1200px) and (min-width:701px) {
+    .topbar { padding:2px 18px 0 !important; }
+    .header { grid-template-columns:205px minmax(0,1fr) 175px !important; min-height:50px !important; height:50px !important; }
+    .header > div:first-child { height:50px !important; }
+    .logo { width:178px !important; max-height:46px !important; margin-top:2px !important; }
+    .title { text-align:center !important; }
+    .title h1 { font-size:21px !important; }
+    .title p { font-size:10px !important; }
+    .update { text-align:right !important; margin-top:0 !important; }
+    .menu { margin-top:0 !important; }
+    .menu button { padding:6px 16px !important; font-size:12px !important; }
+    .theme-toggle { top:15px !important; }
+}
+
+/* Ajuste final: logo apoiado na linha inferior do header e botão de tema separado da atualização */
+@media (min-width:701px){
+  .topbar .header > div:first-child{
+    align-self:stretch;
+    display:flex;
+    align-items:flex-end !important;
+  }
+  .topbar .logo{
+    margin:0 !important;
+    transform:none !important;
+    align-self:flex-end;
+    position:relative;
+    bottom:-1px;
+  }
+  .theme-toggle{
+    position:fixed !important;
+    top:16px !important;
+    right:14px !important;
+    width:38px !important;
+    height:38px !important;
+    border-radius:12px !important;
+    font-size:17px !important;
+  }
+  .update{
+    padding-right:54px !important;
+  }
+}
+
+@media(max-width:700px){
+  .header{grid-template-columns:1fr!important;height:auto!important;min-height:0!important;}
+  .header>div:first-child{height:auto!important;justify-content:center!important;}
+  .logo{width:190px!important;transform:none!important;margin:auto!important;}
+  .update{text-align:center!important;padding-right:0!important;margin-top:5px!important;}
+  .theme-toggle{position:fixed!important;top:auto!important;bottom:20px!important;right:22px!important;}
+}
+</style>
+<style id="logo-na-linha">.header>div:first-child{align-items:flex-end!important}.logo{margin:0 0 -1px 0!important;transform:none!important;align-self:flex-end!important}@media(max-width:1200px) and (min-width:701px){.header>div:first-child{align-items:flex-end!important}.logo{margin:0 0 -1px 0!important}}</style>
+<style id="logo-abaixado-final">
+/* Ajuste visual: desce o logo até a linha inferior do header */
+.header > div:first-child{
+    display:flex !important;
+    align-items:flex-end !important;
+    overflow:visible !important;
+}
+.logo{
+    margin:0 !important;
+    transform:translateY(10px) !important;
+    align-self:flex-end !important;
+}
+@media (max-width:1200px) and (min-width:701px){
+    .logo{transform:translateY(8px) !important;}
+}
+</style>
+
+<style id="logo-colado-na-base-definitivo">
+/* Logo colado na linha inferior de TODO o topbar (abaixo do menu) */
+@media (min-width:701px){
+  .topbar .header > div:first-child{
+    position:static !important;
+    height:auto !important;
+    overflow:visible !important;
+  }
+  .topbar .logo{
+    position:absolute !important;
+    left:28px !important;
+    bottom:0 !important;
+    margin:0 !important;
+    transform:none !important;
+    width:198px !important;
+    max-height:50px !important;
+    z-index:3 !important;
+  }
+}
+@media (max-width:1200px) and (min-width:701px){
+  .topbar .logo{left:18px !important;width:178px !important;max-height:46px !important;}
+}
+</style>
+
+<style id="logo-base-visual-final">
+/* Ajuste definitivo: a PARTE VISÍVEL do logo desce até a linha inferior do cabeçalho.
+   O arquivo da logo possui área transparente interna, por isso bottom:0 sozinho não altera visualmente a posição. */
+@media (min-width:701px){
+  .topbar{ overflow:hidden !important; }
+  .topbar .logo{
+    position:absolute !important;
+    left:28px !important;
+    bottom:-34px !important;
+    width:198px !important;
+    max-height:none !important;
+    margin:0 !important;
+    transform:none !important;
+    z-index:3 !important;
+  }
+}
+@media (max-width:1200px) and (min-width:701px){
+  .topbar .logo{
+    left:18px !important;
+    bottom:-31px !important;
+    width:178px !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -697,4 +840,10 @@ atualizarResumoFiltros();
 render();
 </script>
 </body>
-</html>
+</html><style id="logo-ajuste-meio-final">
+/* Ajuste fino: sobe a logo 9px em relação à versão anterior */
+.topbar .logo{ bottom:-25px !important; }
+@media (max-width:1200px) and (min-width:701px){
+  .topbar .logo{ bottom:-22px !important; }
+}
+</style>
